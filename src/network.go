@@ -20,7 +20,7 @@ func get_serverAddress(udpType, ipAddress,port string)(addr *net.UDPAddr){
 	return addr		
 }
 
-func createRemoteSocket(addr *net.UDPAddr udpType, ipAddress, port string)(*net.UDPConn){
+func createRemoteSocket(addr *net.UDPAddr udpType)(*net.UDPConn){
 	remoteSocket, err := net.DialUDP(udpType, nil, addr)
 	checkError(err, ": Unsuccessfull socket connection")
 	return remoteSocket	 
@@ -34,14 +34,26 @@ func createLocalSocket(udpType, ipAddress,port string)(*net.UDPConn){
 	return conn
 }
 
-func send_message(message string, remoteSocket *net.UDPConn){
+func send_messageBuffer(message string, remoteSocket *net.UDPConn){
 	buffer := make([]byte, 1024)
-	for i:=0; i<len(msg); i++ {
-		buffer[i] = byte(msg[i])
+	for i:=0; i<len(message); i++ {
+		buffer[i] = byte(message[i])
 	}
 	for {
 		_, err := remoteSocket.Write(buffer)
-		checkError(err)
+		checkError(err, "error write")
+	}
+}
+
+
+func send_message(message string, remoteSocket *net.UDPConn){
+	buffer := make([]byte, 1024)
+	for i:=0; i<len(message); i++ {
+		buffer[i] = byte(message[i])
+	}
+	for {
+		_, err := remoteSocket.Write(buffer)
+		checkError(err, "error write")
 	}
 }
 
@@ -55,9 +67,12 @@ func recv_message(port string, localSocket *net.UPDConn)(size, buffer[] byte){
 
 
 
-func read_message(buffer[] byte, size int){
-	for i := 0; i<size; i++{
-		s := string(buffer[size])
-		fmt.print(s)
+func read(localSocket *net.UDPConn) {
+	for {
+		b := make([]byte,1024)	
+		n,_ := localSocket.Read(b)
+		s := string(b[:n])
+		fmt.Println(s)
 	}
 }
+
