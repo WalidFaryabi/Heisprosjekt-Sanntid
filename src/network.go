@@ -92,6 +92,7 @@ func main(){
 	err11 := json.Unmarshal(buffer, &msgd)
 	checkError(err11,"u done fucke up")
 	fmt.Println(msgd.identifier, msgd.msg)*/
+	//nothing
 
 
 }
