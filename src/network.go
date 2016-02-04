@@ -76,3 +76,9 @@ func read(localSocket *net.UDPConn) {
 	}
 }
 
+func addMessageToBuffer(msg string, buffer []byte) {
+	for i:=0; i< len(msg); i++ {
+		buffer[i] = byte(msg[i])
+	}
+}
+
