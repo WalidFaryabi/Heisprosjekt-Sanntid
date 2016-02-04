@@ -50,7 +50,7 @@ func read() {
 func  main() {
 	//find the ip address and use this instead
 	
-	buffer := make([]byte, 1024)
+	/*buffer := make([]byte, 1024)
 //	bufferListen := make([]byte, 1024)
 	
 	msg := string("Hello!")
@@ -58,7 +58,11 @@ func  main() {
 
 	go write(buffer)
 	go read()
-
+		*/	
+	for j :=65; j<75;j++{
+		print(string(j))	
+	}
+ 
 	select {}
 }
 
