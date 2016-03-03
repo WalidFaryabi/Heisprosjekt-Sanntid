@@ -52,8 +52,10 @@ procedure exercise7 is
 		
 			random_nr : int := random(Gen);
 			if random_nr < Error_rate then
+				delay Duration(0.5 * random_nr);
 				raise Count_Failed;
 			else
+				delay Duration(4 * random_nr);
 				return x + 10;
 		
         -------------------------------------------
