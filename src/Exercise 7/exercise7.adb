@@ -1,3 +1,4 @@
+
 with Ada.Text_IO, Ada.Integer_Text_IO, Ada.Numerics.Float_Random;
 use  Ada.Text_IO, Ada.Integer_Text_IO, Ada.Numerics.Float_Random;
 
@@ -25,7 +26,7 @@ procedure exercise7 is
 			if Finished'Count = (0) then
 				Finished_Gate_Open := False;
 				Aborted := False;
-			end if
+			end if;
             ------------------------------------------
         end Finished;
 
@@ -46,17 +47,16 @@ procedure exercise7 is
     
     function Unreliable_Slow_Add (x : Integer) return Integer is
     Error_Rate : Constant := 0.15;  -- (between 0 and 1)
+    random_nr : float := random(Gen);
     begin
         -------------------------------------------
         -- PART 1: Create the transaction work here
-		
-			random_nr : int := random(Gen);
+			
 			if random_nr < Error_rate then
-				delay Duration(0.5 * random_nr);
 				raise Count_Failed;
 			else
-				delay Duration(4 * random_nr);
 				return x + 10;
+			end if;
 		
         -------------------------------------------
     end Unreliable_Slow_Add;
@@ -86,7 +86,7 @@ procedure exercise7 is
 				when Error : Count_Failed =>
 				Manager.Signal_Abort;
 				
-			end
+			end;
 			
 			Manager.Finished;
 
@@ -119,3 +119,7 @@ procedure exercise7 is
 begin
     Reset(Gen); -- Seed the random number generator
 end exercise7;
+
+ 
+
+
