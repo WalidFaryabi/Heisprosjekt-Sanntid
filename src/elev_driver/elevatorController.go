@@ -4,9 +4,9 @@ import (
 	"fmt"
 )
 
-const N_FLOOR = 4
-const N_BUTTONS = 3
-const MOTOR_SPEED = 2800
+const N_FLOORS int = 4
+const N_BUTTONS int = 3
+const MOTOR_SPEED int = 2800
 
 type Elev_motor_direction_t int
 const (
@@ -32,7 +32,7 @@ var lamp_channel_matrix = [N_FLOORS][N_BUTTONS] int{
 var button_channel_matrix = [N_FLOORS][N_BUTTONS] int {
 	{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
 	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
-	{BUTTON_UP3, BUTTON_dOWN3, BUTTON_COMMAND3},
+	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 }
 
@@ -45,20 +45,22 @@ func elev_checkLegalFloors(button Elev_button_type_t, floor int)(int){
 		fmt.Println("YOU ARE ASKING FOR A FLOOR ABOVE THE MAXIMUM? WTF? FATAL ERROR")
 		return 1
 	}	
-	if(button < 0 || button >= N_BUTTONS || ( (button == BUTTON_CALL_UP) && (floor == 3) ) || ( (button == BUTTON_CALL_DOWN) && (floor == 0)) {
+	if(button < 0 || button > BUTTON_COMMAND || ( (button == BUTTON_CALL_UP) && (floor == 3) ) || ( (button == BUTTON_CALL_DOWN) && (floor == 0))) {
 		fmt.Println("You are asking for a button that does not exist.")
 		return 1
 	}
+	return 0
 }
 
 func Elev_init(){
 	init_success := Io_init()
-	if(!init_success){
+
+	if(init_success == 0){
 		fmt.Println("unsuccessfull elev init")
 		return
 	}
-	for (f := 0; f<N_FLOORS; f++){
-		for (b elev_button_type_t = 0; b < N_BUTTONS; b++){
+	for  f := 0; f<N_FLOORS; f++{
+		for b := BUTTON_CALL_UP ; b <= BUTTON_COMMAND; b++{
 			Elev_set_button_lamp(b,f,0)		
 		}
 	}
@@ -75,20 +77,20 @@ func Elev_set_motor_direction(dirn Elev_motor_direction_t){
 		Io_write_analog(MOTOR,MOTOR_SPEED)
 	}else if (dirn < 0){
 		Io_set_bit(MOTORDIR)
-		IO_write_analog(MOTOR,MOTOR_SPEED)
+		Io_write_analog(MOTOR,MOTOR_SPEED)
 	}
 	
 }
 
-func Elev_set_button_lamp(button Elev_button_type_t, button,floor,value int){
+func Elev_set_button_lamp(button Elev_button_type_t,floor,value int){
 	if(elev_checkLegalFloors(button,floor) == 1){
-		return
+		return 
 	}
-	if value{
+	if (value==1){
 		Io_set_bit(lamp_channel_matrix[floor][button])
-	}
-	else
-		Io_clear_bit(lamp_channel_matrix[floor][button])	
+	}else{
+		Io_clear_bit(lamp_channel_matrix[floor][button])
+	}	
 	
 }
 
@@ -97,57 +99,59 @@ func Elev_set_floor_indicator(floor int){
 		fmt.Println("Fatal error, non existing floor")
 		return
 	}
-	if(floor & 0x02){
+	if((floor & 0x02) == 1){
 		Io_set_bit(LIGHT_FLOOR_IND1)
-	}
-	else{
+	}else{
 		Io_clear_bit(LIGHT_FLOOR_IND1)
 	}
-	if(floor & 0x01){
+	if((floor & 0x01 ) == 1){
 		Io_set_bit(LIGHT_FLOOR_IND2)
-	}
-	else{
+	}else{
 		Io_clear_bit(LIGHT_FLOOR_IND2)
 	}
 }
 
 func Elev_set_door_open_lamp(value int){
-	if(value)
+	if(value == 1){
 		Io_set_bit(LIGHT_DOOR_OPEN)
-	else
+	}else{
 		Io_clear_bit(LIGHT_DOOR_OPEN)
+	}
 
 }
 
 func Elev_set_stop_lamp(value int){
-	if(value)
+	if(value == 1){
 		Io_set_bit(LIGHT_STOP)
-	else
+	}else{
 		Io_clear_bit(LIGHT_STOP)
+	}
 }
 
 func Elev_get_button_signal(button Elev_button_type_t, floor int) (int){
-	if(elev_checkLegalFloors(button,floor))
-		return
-	if(Io_read_bit(button_channel_matrix[floor][button])){
-		return 1	
-	}
-	else
+	if(elev_checkLegalFloors(button,floor) == 1){
 		return 0
+	}
+	if(Io_read_bit(button_channel_matrix[floor][button]) ==1){
+		return 1	
+	}else{
+		return 0
+	}
 }
 
-func Elev_get_floor_sensor_signal()(int){
-	if(Io_read_bit(SENSOR_FLOOR1))
-		return 0
 
-	else if(Io_read_bit(SENSOR_FLOOR2))
+func Elev_get_floor_sensor_signal()(int){
+	if(Io_read_bit(SENSOR_FLOOR1) == 1){
+		return 0
+	}else if(Io_read_bit(SENSOR_FLOOR2) == 1){
 		return 1
-	else if(Io_read_bit(SENSOR_FLOOR3))
+	}else if(Io_read_bit(SENSOR_FLOOR3) == 1){
 		return 2
-	else if(Io_read_bit(SENSOR_FLOOR4))
+	}else if(Io_read_bit(SENSOR_FLOOR4) == 1){
 		return 3
-	else
+	}else{
 		return -1
+	}
 }
 
 func Elev_get_stop_signal()(int){

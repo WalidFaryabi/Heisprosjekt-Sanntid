@@ -23,9 +23,7 @@ func Io_clear_bit(channel int){
 
 }
 
-func Io_set_bit(channel int){
-	C.io_set_bit(C.int(channel))
-}
+
 
 func Io_read_bit(channel int)(int){
 	return int(C.io_read_bit((C.int(channel))))
