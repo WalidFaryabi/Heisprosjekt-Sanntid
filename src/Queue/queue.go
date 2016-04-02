@@ -1,4 +1,4 @@
-package main
+package queue
 import(
         ."fmt"
 )
@@ -18,7 +18,7 @@ var last_floor int
 var Last_direction int
 var n_floors int
 var MainFloor int
-func queue_init(n_total_floors int){
+func Queue_init(n_total_floors int){
        // queueSystems := make([]queue
         var quetest queueCommands
         quetest = []button_type{0,0,0}
@@ -27,7 +27,7 @@ func queue_init(n_total_floors int){
        }
         n_floors = n_total_floors
         last_floor = 0
-        last_direction = 1      
+        Last_direction = 1      
         //Commands,len(queueSystem),n_floors)
         //queueSystem = queueSystems
         
@@ -36,7 +36,7 @@ func queue_init(n_total_floors int){
 }
 
 //Algorithm for choosing the next queue
-func setNextMainFloor(){
+func SetNextMainFloor(){
 	//count amount of orders in the same direction it previously stopped
 	orders_up :=0
 	orders_down := 0
@@ -44,6 +44,10 @@ func setNextMainFloor(){
 	order_lowestFloorOrder :=  0//lowest floor order
 	top_current_difference := n_floors - last_floor //Amount of elevators between current and top floor
 	first_current_difference := last_floor - n_floors //Amount of elevators between current and first floor
+	if(orders[last_floor][BUTTON_COMMAND] == 1){
+	        MainFloor = last_floor
+	        return
+	}
         if( last_floor != n_floors-1 || last_floor != 0){
 	        for j := last_floor ; j < n_floors ; j++ {
 		        if(orders[j][BUTTON_CALL_UP] == 1){
@@ -77,15 +81,13 @@ func setNextMainFloor(){
 	                MainFloor = order_lowestFloorOrder
 	        }
         }
-        if(MainFloor > lastfloor){
-                last_direction = 1
+        if(MainFloor > last_floor){
+                Last_direction = 1
         }else{
-                last_direction = -1
+                Last_direction = -1
         }
 
 
 }
 
-func main(){
-        queue_init(5)
-}
+
