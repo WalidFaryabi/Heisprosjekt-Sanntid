@@ -4,7 +4,7 @@ import(
 )
 
 
-type button_type int
+type Button_type int
 const (
 	BUTTON_CALL_UP button_type = iota //declares type with 0 and increments for each new variable
 	BUTTON_CALL_DOWN
@@ -13,8 +13,8 @@ const (
 )
 
 type queueCommands[] button_type // queueorder commands
-var orders[] queueCommands
-var last_floor int
+var Orders[] queueCommands
+var Last_floor int
 var Last_direction int
 var n_floors int
 var MainFloor int
