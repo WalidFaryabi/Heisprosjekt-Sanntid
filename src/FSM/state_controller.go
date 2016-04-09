@@ -4,7 +4,7 @@ import(
 	"fmt"
 	"../elev_driver"
 	"../queue"
-	//"time"
+	"time"
 )
 
 
@@ -37,7 +37,7 @@ func Event_init(){
 		elev_driver.Elev_set_motor_direction(0) // c
 	}
 	state_slave = IDLE
-
+	fmt.Println("Init done")
 }
 
 func Event_queueNotEmpty(){
@@ -45,10 +45,12 @@ func Event_queueNotEmpty(){
         switch state_slave{
                case IDLE:
                	    fmt.Println("Queue not empty")
-               	    queue.MainFloor = 3
-                    //queue.SetNextMainFloor()
-                   // elev_driver.Elev_set_motor_direction(elev_driver.Elev_motor_direction_t(queue.Last_direction))
-                    elev_driver.Elev_set_motor_direction(1)
+               	    //queue.MainFloor = 3
+                    queue.SetNextMainFloor()
+               	    //queue.MainFloor = 2
+                    fmt.Printf("Main floor: %i", queue.MainFloor)
+                    elev_driver.Elev_set_motor_direction(elev_driver.Elev_motor_direction_t(queue.Last_direction))
+                    //elev_driver.Elev_set_motor_direction(1)
                     
                     state_slave = MOVING
         }
@@ -58,9 +60,12 @@ func Event_floorInQueue(floor int){ // this is activated if one of the orders ar
 	queue.Last_floor = floor
 	switch(state_slave){
 	case MOVING:
+		fmt.Println("Floor in queue called, moving state.")
 		if(queue.Orders[floor][2] == 1){
+			fmt.Println("Sup boy")
 			elev_driver.Elev_set_motor_direction(0)
-			queue.Orders[floor][elev_driver.BUTTON_COMMAND] = 0
+			queue.Orders[floor][2] = 0
+			fmt.Println(queue.Orders)
 			elev_driver.Elev_set_button_lamp(elev_driver.BUTTON_COMMAND,floor,0)
 		}
 		if( (queue.Last_direction == 1) && (queue.Orders[floor][elev_driver.BUTTON_CALL_UP] == 1) ){
@@ -77,29 +82,35 @@ func Event_floorInQueue(floor int){ // this is activated if one of the orders ar
 		elev_driver.Elev_set_door_open_lamp(1)
 		state_slave = DOOR_OPEN
 		//timer := time.NewTimer(time.Second * 3 )
-		
+		dur := 3
+		something := time.Duration(dur)*time.Second
+		time.AfterFunc(something,Event_doorTimeout)
 		//<- timer.C use this to indicate timer done
 	  	  break
 	}
 }
 
 func Event_doorTimeout(){
+	fmt.Println("This was called")
 	switch(state_slave){
 	case DOOR_OPEN:
 		elev_driver.Elev_set_door_open_lamp(0)
 		if(queue.MainFloor == queue.Last_floor){
 			state_slave = IDLE
+			fmt.Println("MAin floor reached")
 		}else{
 			elev_driver.Elev_set_motor_direction(elev_driver.Elev_motor_direction_t(queue.Last_direction))
 			state_slave = MOVING
 		}
 	}
-}
 
+}
 func Event_newQueueRequest(floor int, button queue.Button_type){
 // add order regardless of current state
 	fmt.Printf("queueRequest in floor: %d \n", floor+1)
 	queue.Orders[floor][button] = 1
+	fmt.Println(queue.Orders)
+	elev_driver.Elev_set_button_lamp(elev_driver.Elev_button_type_t(button), floor,1)
 }
 
 
