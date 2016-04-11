@@ -28,19 +28,19 @@ const(
 )
 
 type initialization_msg struct {
-	new_id int // Giving a new ID to a new elevator
-	numberOfElevators int
-	nextElevatorAddr string
-	nextElevatorPort string
+	New_id int // Giving a new ID to a new elevator
+	NumberOfElevators int
+	NextElevatorAddr string
+	NextElevatorPort string
 }
 
 
 
 type msg_orderRequest struct {
-	elev_id int
-	[]elev_score int
-	floor int
-	buttontype buttonType
+	Elev_id int
+	[]Elev_score int
+	Floor int
+	Buttontype buttonType
 }
 
 

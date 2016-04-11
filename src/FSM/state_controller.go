@@ -116,11 +116,12 @@ func Event_newQueueRequest(floor int, button queue.Button_type){
 }
 
 func Event_OutsideButtonPressed(floor int, button queue.Button_type){
+	//Accepting a button outside pressed does not matter in which state we are. All orders will be accessed.
 	score := queue.CalculateOrderScore(floor, button)
 	score_array := []int{score}
-	msg_handler.send_requestedOrder(score_array, floor,button)
+	msg_handler.send_requestedOrder(score_array, floor,button)			
 }
-
+// ADD LIGHTS TO THE BUTTONS
 func Event_evaluateRequest(requestedOrder msg_orderRequest){
 	if(elev_id == requestedOrder.elev_id){
 		highestElevatorScore := 0
@@ -128,23 +129,23 @@ func Event_evaluateRequest(requestedOrder msg_orderRequest){
 		for i := 0 ; i<msg_handler.GetNelevators() ;i++{
 			if(requestedOrder.elev_score[i] >= highestElevatorScore){
 				highestElevatorScore = requestedOrder.elev_score[i]
-				winningElevator = i
+				winningElevator = i + 1
 			}
 		}
-		//send order msg with elev id chosen as the winner. he has won.
+		if(elev_id == winningElevator ){
+			//this elevator is the winner
+			queue.Orders[requestedOrder.Floor]requestedOrder.Buttontype] = 1
+		}else{
+			Send_newOrder(requestedOrder.Floor, requestedOrder.Button_type, winningElevator)
+		}
+		break
 	}
-	
+
 	else{
-		score := queue.CalculateOrderScore(requestedOrder.floor, requestedOrder.buttontype)
-		requestedOrder.elev_score = append(elev_score, score)
-		msg_handler.send_requestedOrder(requestedOrder.elev_score, requestedOrder.floor,requestedOrder.button)
+		score := queue.CalculateOrderScore(requestedOrder.Floor, requestedOrder.Buttontype)
+		requestedOrder.Elev_score = append(requestedOrder.Elev_score, score)
+		msg_handler.send_requestedOrder(requestedOrder.Elev_score, requestedOrder.Floor,requestedOrder.Button)
 	}
 
 }
-
-type msg_orderRequest struct {
-	elev_id int
-	[]elev_score int
-	floor int
-	buttontype buttonType
-}
+func Send_newOrder(floor int, button ButtonType, chosenElevator int){

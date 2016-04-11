@@ -123,7 +123,6 @@ func CheckQueueList()(int){
 	return -1
 }
 
-
 func CalculateOrderScore(floor int, button Button_type)(float){ // algorithm for calculating whether an elevator should take an order or not.
 	priorityScore float = 0
 	nCurrentOrders := CheckQueueList()
@@ -137,6 +136,9 @@ func CalculateOrderScore(floor int, button Button_type)(float){ // algorithm for
 			return priorityScore 
 
 		}
+	}
+	if(queue.Orders[floor][button] == 1){
+		priorityScore+=50
 	}
 	if(Last_floor == floor){
 		priorityScore+=20

@@ -48,15 +48,7 @@ func broadcast(conn *net.UDPConn) {
 	conn.Close()
 }
 
-func Send_requestedOrder([]elev_score int, floor int, buttontype buttonType){
-	msg := msg_orderRequest{elev_id: elev_id, []elev_score : []elev_score,floor : floor, buttonType : buttontype }
-	buffer,err := json.Marshal(msg)
-	if err != nil{
-		fmt.Println("ERROR IN MARSHAL OF REQUESTED ORDER")
-		fmt.Println("%s", err)
-	}
-	_,_ = neighbourconnection.Write(buffer)
-}
+
 
 func receive_
 
@@ -68,27 +60,28 @@ func send_initMsg(init_msg initialization_msg){
 
 
 func Init_newElevator(init_msg initialization_msg){
-	elev_id = init_msg.new_id
-	nElevators = init_msg.numberOfElevators
-	neighbourIP = init_msg.nextElevatorAddr
-	neighbourPORT = init_msg.nextElevatorPort
+	elev_id = init_msg.New_id
+	nElevators = init_msg.NumberOfElevators
+	neighbourIP = init_msg.NextElevatorAddr
+	neighbourPORT = init_msg.NextElevatorPort
 }
 
+///////**************************////////////////////////
 
-
-type initialization_msg struct {
-	new_id int // Giving a new ID to a new elevator
-	numberOfElevators int
-	nextElevatorAddr string
-	nextElevatorPORT string
+func Send_requestedOrderEvaluation([]elev_score int, floor int, buttontype buttonType){
+	msg := msg_orderRequest{Elev_id: elev_id, []Elev_score : []elev_score,Floor : floor, ButtonType : buttontype }
+	buffer,err := json.Marshal(msg)
+	if err != nil{
+		fmt.Println("ERROR IN MARSHAL OF REQUESTED ORDER")
+		fmt.Println("%s", err)
+	}
+	_,_ = neighbourconnection.Write(buffer)
 }
 
-type msg_orderRequest struct {
-	elev_id int
-	[]elev_score int
-	floor int
-	buttontype buttonType
+func Send_newOrder(floor int, button ButtonType, chosenElevator int){
+	
 }
+
 
 func GetID()(int){
 	return elev_id
