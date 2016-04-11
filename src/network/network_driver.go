@@ -36,3 +36,4 @@ func GetConnectionForDialing(udpAddr *UDPAddr) (*net.UDPConn) {
 	return conn	
 }
 
+import("communication")

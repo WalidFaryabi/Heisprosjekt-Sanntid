@@ -1,6 +1,7 @@
 package queue
 import(
-        ."fmt"
+        "fmt"
+        "math"
 )
 
 
@@ -9,7 +10,7 @@ const (
 	BUTTON_CALL_UP Button_type = iota //declares type with 0 and increments for each new variable
 	BUTTON_CALL_DOWN
 	BUTTON_COMMAND
-
+/
 )
 
 type queueCommands[] Button_type // queueorder commands u dont need it.
@@ -109,5 +110,80 @@ func SetNextMainFloor(){
 
 
 }
+
+func CheckQueueList()(int){
+	total_orders := 0
+	for i:= 0; i<4;i++{
+		for k:= 0; k<3; k++{
+			if(Orders[i][k] ==1){
+				total_orders++
+			}
+		}
+	}
+	return -1
+}
+
+
+func CalculateOrderScore(floor int, button Button_type)(float){ // algorithm for calculating whether an elevator should take an order or not.
+	priorityScore float = 0
+	nCurrentOrders := CheckQueueList()
+	if(CheckQueueList() == -1){
+		priorityScore +=100
+		if(Last_floor == floor){
+			priorityScore +=200 
+			return priorityScore
+		}else{
+			priorityScore+=  150/(math.Abs(Last_floor-floor) )
+			return priorityScore 
+
+		}
+	}
+	if(Last_floor == floor){
+		priorityScore+=20
+	}else if(Last_floor < floor){
+		if(MainFloor > floor){
+			priorityScore+=45
+			if(button == BUTTON_CALL_UP){
+				priorityScore+=155
+			}
+		}else if(MainFloor < floor && Last_direction == 1){
+			priorityScore+=10
+			if(button == BUTTON_CALL_UP){
+				priorityScore+=60
+			}
+			else{
+				priorityScore+=30
+			}
+		}else if(MainFloor < floor && Last_direction == -1){
+			priorityScore+=(100/(floor-MainFloor)) // maximum point given by that is 50
+		}
+
+	}else{ //Last_floor > floor
+		if(MainFloor < floor){
+			priorityScore+=45
+			if(button == BUTTON_CALL_DOWN){
+				priorityScore+=155
+			}
+		}else if(Mainfloor > floor && Last_direction == -1){
+			priorityScore+=10
+			if(button == BUTTON_CALL_DOWN){
+				priorityScore+=60
+			}
+			else{
+				priorityScore+=30
+			}
+		}else if(MainFloor > floor && Last_direction == 1){
+			priorityScore+=(100/(Mainfloor - floor)){
+			}
+		}
+
+
+
+
+	}
+
+
+}
+
 
 

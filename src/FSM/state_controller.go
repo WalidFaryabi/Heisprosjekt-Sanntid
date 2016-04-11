@@ -5,6 +5,8 @@ import(
 	"../elev_driver"
 	"../queue"
 	"time"
+	"network"
+	"msg_handler"
 )
 
 
@@ -113,5 +115,36 @@ func Event_newQueueRequest(floor int, button queue.Button_type){
 	elev_driver.Elev_set_button_lamp(elev_driver.Elev_button_type_t(button), floor,1)
 }
 
+func Event_OutsideButtonPressed(floor int, button queue.Button_type){
+	score := queue.CalculateOrderScore(floor, button)
+	score_array := []int{score}
+	msg_handler.send_requestedOrder(score_array, floor,button)
+}
 
-// Non-event functions creating the structure of the elevator system
+func Event_evaluateRequest(requestedOrder msg_orderRequest){
+	if(elev_id == requestedOrder.elev_id){
+		highestElevatorScore := 0
+		winningElevator := 0
+		for i := 0 ; i<msg_handler.GetNelevators() ;i++{
+			if(requestedOrder.elev_score[i] >= highestElevatorScore){
+				highestElevatorScore = requestedOrder.elev_score[i]
+				winningElevator = i
+			}
+		}
+		//send order msg with elev id chosen as the winner. he has won.
+	}
+	
+	else{
+		score := queue.CalculateOrderScore(requestedOrder.floor, requestedOrder.buttontype)
+		requestedOrder.elev_score = append(elev_score, score)
+		msg_handler.send_requestedOrder(requestedOrder.elev_score, requestedOrder.floor,requestedOrder.button)
+	}
+
+}
+
+type msg_orderRequest struct {
+	elev_id int
+	[]elev_score int
+	floor int
+	buttontype buttonType
+}
