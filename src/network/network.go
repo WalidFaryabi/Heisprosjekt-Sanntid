@@ -3,22 +3,26 @@ package netw
 import (
 	"fmt"
 	"net"
+	"bufio"
+	"strconv"
+	"os"
+	"strings"
 )
 
 func checkAndPrintError(err error, description string) {
 	if err != nil {
 		fmt.Println(err)
-		fmt.Printf(description)
+		fmt.Println(description)
 	}
 }
 
 func GetConnectionForListening(address string) (*net.UDPConn) {
 
 	udpAddr, err := net.ResolveUDPAddr("udp", address)
-	checkAndPrintError(err, "Unsuccessful udpAdress retrieval \n")
+	checkAndPrintError(err, "Unsuccessful udpAdress retrieval")
 	
 	conn, err := net.ListenUDP("udp4", udpAddr)
-	checkAndPrintError(err, "Error occurred in establishing connection for listening \n")
+	checkAndPrintError(err, "Error occurred in establishing connection for listening")
 	return conn
 }
 
@@ -29,7 +33,7 @@ func GetConnectionForDialing(address string) (*net.UDPConn) {
 	checkAndPrintError(err, "Unsuccessful udpAdress retrieval \n")
 
 	conn, err := net.DialUDP("udp", nil, udpAddr)
-	checkAndPrintError(err, "Error occurred in establishing a connection for sending \n")
+	checkAndPrintError(err, "Error occurred in establishing a connection for sending")
 	return conn	
 }
 
@@ -49,7 +53,20 @@ func GetLocalIP() (string) {
     return ""
 }
 
+func GetPort() (int) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter listen port: ")
+	portString, _ := reader.ReadString('\n')
+	portString = strings.Replace(portString, "\n", "", -1)
+	port,err := strconv.Atoi(portString)
 
+	if err != nil {
+		fmt.Println("ERROR IN CONVERSION")
+		fmt.Printf("%s \n", err)
+		return 0
+	}
+	return port
+}
 
 /*
 func GetUDPAddress(ipAddress string, port int) (*net.UDPAddr) {

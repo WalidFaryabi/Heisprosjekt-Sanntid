@@ -1,27 +1,116 @@
 package msg_handler
 
+
 import(
-	"network"
+	"fmt"
+	"net"
+	"../netw"
 	"encoding/json"	
-)
+	"strconv"
+	"time"
+)	
+
+
+
+const broadcastIP string = "129.241.187.255"
+const broadcastPort string = "20022"
 
 var LocalIP	string
-var Localport string
-//var neighourIP string
-//var neighbourPORT string
-var neighbourconnection network.UDPCONN
+var LocalPort int
+var neighbourElevatorAddress string
+var neighbourConnection *net.UDPConn
 
 var elev_id int 			// each elevator has an unique ID
 var nElevators int 	
 var IPaddress string // along with port
 type buttonType int
 
+type Message struct {
+	Msg string
+	Addr string
+}
+
+
+func SendElevMessages() {
+
+	msg := "Hello!"
+	addr := GetLocalAddress()
+	
+	for {
+			dial_msg := Message{msg, addr}
+			buffer,err := json.Marshal(dial_msg)
+	
+			if err != nil {
+				fmt.Println("ERROR IN MARSHAL")
+				fmt.Println("%s", err)
+			}
+			_,err = neighbourConnection.Write(buffer)
+
+			if err != nil {
+				fmt.Println("ERROR IN DIALING")
+				fmt.Println(err)		
+			}
+		}
+}
+
+func listen(conn *net.UDPConn) {
+	buffer := make([]byte, 1024)
+	addr := ""
+	t0 := time.Now()
+	var message Message
+
+	for {	
+			if (neighbourElevatorAddress == ""){
+				n, err := conn.Read(buffer)
+				t1 := time.Now()
+				if(t1.Sub(t0) > 2*(1000*time.Millisecond)){
+					nElevators = 1
+					fmt.Println("NUMBER OF ELEVATORS: 1")
+				}
+				
+				if err != nil {
+					fmt.Println("ERROR IN READING MESSAGE")
+					fmt.Println(err)
+				}
+
+				if n != 0 {
+					_ = json.Unmarshal(buffer[:n], &message)
+					fmt.Println(message.Msg, message.Addr[len(message.Addr)-2:])
+					SetNeighbourElevatorAddress(message.Addr)
+				}
+
+			} else {
+				n, err := conn.Read(buffer)
+				if err != nil {
+					fmt.Println("ERROR IN READING MESSAGE")
+					fmt.Println(err)
+				}
+				if n != 0 {
+					_ = json.Unmarshal(buffer[:n], &message)
+					
+					fmt.Println(message.Msg, message.Addr[len(message.Addr)-2:])
+					addr = message.Addr
+					if (addr != "" && neighbourElevatorAddress != addr) {
+						fmt.Println("WE HAVE DETECTED A NEW ELEVATOR WITH ADDRESS: ", addr)
+					}
+				}		
+			}
+		}
+}
+
+func ListenForElevMessages() {
+	listenIP := ""
+	listenAddr := listenIP + ":" + strconv.Itoa(20000+LocalPort) 
+	listen_conn := netw.GetConnectionForListening(listenAddr)
+	
+	listen(listen_conn)	
+}
 
 func broadcast(conn *net.UDPConn) {
 	t0 := time.Now()
 	run_bc := true
 	msg := "Hello!"
-	addr := netw.GetLocalIP()+":"+strconv.Itoa(20000+listenPort)
+	addr := GetLocalAddress()
 	
 	broadcast_msg := Message{msg, addr}
 
@@ -48,15 +137,21 @@ func broadcast(conn *net.UDPConn) {
 	conn.Close()
 }
 
-
-
-func receive_
-
-
-func send_initMsg(init_msg initialization_msg){
-
-
+func Broadcast() {
+	broadcastAddr := broadcastIP+":"+broadcastPort
+	brdcast_conn := netw.GetConnectionForDialing(broadcastAddr)
+	
+	broadcast(brdcast_conn)
 }
+
+func IsNeighbourElevatorAddressEmtpy()(bool) {
+	if (neighbourElevatorAddress != "") {
+		return false
+	}
+	return true
+}
+
+
 
 
 
@@ -104,23 +199,6 @@ func Send_elevInitCompleted(successfull bool){
 	_,_ = neighbourconnection.Write(buffer)*/
 }
 
-
-
-
-func GetID()(int){
-	return elev_id
-}
-
-func GetNelevators()(int){
-	return nElevators
-}
-
-type msg_OrderRequest struct{
-	Elev_targetID int
-	Floor int
-	Buttontype buttonType
-}
-
 func send_msg(msg Message){
 	buffer,err := json.Marshal(msg)
 	if err != nil{
@@ -137,3 +215,32 @@ func send_msg(msg Message){
 
 	}*/
 }
+
+func GetNeighbourElevAddress()(string) {
+	return neighbourElevatorAddress
+}
+
+func SetNeighbourElevConnection() {
+	if neighbourConnection == nil && neighbourElevatorAddress != "" {
+		neighbourConnection = netw.GetConnectionForDialing(neighbourElevatorAddress)
+	}
+}
+
+func GetNeighbourElevConnection() (*net.UDPConn) {
+	return neighbourConnection
+}
+
+func GetLocalAddress() (string) {
+	return LocalIP+":"+strconv.Itoa(20000+LocalPort)
+}
+
+func GetID()(int){
+	return elev_id
+}
+
+func GetNelevators()(int){
+	return nElevators
+}
+
+
+

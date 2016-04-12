@@ -17,6 +17,7 @@ const(
 type msgType int
 const(
 	Initialization = iota
+	InitNeighbourElevConn
 	OrderRequestEvaluation
 	OrderRequest
 	NewElevatorconnection
@@ -52,42 +53,8 @@ type Message struct{
 	SuccesfullInit bool
 	Elev_failedID int
 
-
 }
 
-
-
-
-type initialization_msg struct {
-	MsgID msgType
-	New_id int // Giving a new ID to a new elevator
-	NumberOfElevators int
-	NextElevatorAddr string
-	NextElevatorPort string
-}
-
-
-
-type msg_orderRequestEvaluation struct {
-	MsgID msgType
-	Elev_id int
-	[]Elev_score int
-	Floor int
-	Buttontype buttonType
-}
-
-type msg_OrderRequest struct{
-	MsgID msgType
-	Elev_targetID int
-	Floor int
-	Buttontype buttonType
-}
-
-type msg_elevInit struct{
-	MsgID msgType
-	Elev_targetID int
-	SuccesfullInit bool
-}
 
 type ch_elevOrder struct{
 	Floor int
@@ -96,22 +63,3 @@ type ch_elevOrder struct{
 
 }
 
-/*type messageType struct{
-	
-	msg_type msgType
-
-
-	//initalization info:
-	new_id int
-	numberOfElevators int
-	nextElevatorAddr string
-	nextElevatorPORT string
-
-	//OrderRequest
-	elev_id int
-	[]elev_score int
-	floor int
-	buttontype buttonType
-
-
-}*/
