@@ -17,17 +17,17 @@ const(
 type msgType int
 const(
 	Initialization = iota
+	OrderRequestEvaluation
 	OrderRequest
-	newElevatorconnections
+	NewElevatorconnection
+	Elevator_initializationStatus
 )	 		
 
 
-type messageID int
-const(
 
-)
 
 type initialization_msg struct {
+	MsgID msgType
 	New_id int // Giving a new ID to a new elevator
 	NumberOfElevators int
 	NextElevatorAddr string
@@ -36,14 +36,33 @@ type initialization_msg struct {
 
 
 
-type msg_orderRequest struct {
+type msg_orderRequestEvaluation struct {
+	MsgID msgType
 	Elev_id int
 	[]Elev_score int
 	Floor int
 	Buttontype buttonType
 }
 
+type msg_OrderRequest struct{
+	MsgID msgType
+	Elev_targetID int
+	Floor int
+	Buttontype buttonType
+}
 
+type msg_elevInit struct{
+	MsgID msgType
+	Elev_targetID int
+	SuccesfullInit bool
+}
+
+type ch_elevOrder struct{
+	Floor int
+	Button buttonType
+
+
+}
 
 /*type messageType struct{
 	

@@ -59,6 +59,10 @@ func send_initMsg(init_msg initialization_msg){
 }
 
 
+
+
+///////**************************////////////////////////
+
 func Init_newElevator(init_msg initialization_msg){
 	elev_id = init_msg.New_id
 	nElevators = init_msg.NumberOfElevators
@@ -66,10 +70,8 @@ func Init_newElevator(init_msg initialization_msg){
 	neighbourPORT = init_msg.NextElevatorPort
 }
 
-///////**************************////////////////////////
-
 func Send_requestedOrderEvaluation([]elev_score int, floor int, buttontype buttonType){
-	msg := msg_orderRequest{Elev_id: elev_id, []Elev_score : []elev_score,Floor : floor, ButtonType : buttontype }
+	msg := msg_orderRequestEvaluation{MsgID : OrderRequestEvaluation,Elev_id: elev_id, []Elev_score : []elev_score,Floor : floor, ButtonType : buttontype}
 	buffer,err := json.Marshal(msg)
 	if err != nil{
 		fmt.Println("ERROR IN MARSHAL OF REQUESTED ORDER")
@@ -78,9 +80,27 @@ func Send_requestedOrderEvaluation([]elev_score int, floor int, buttontype butto
 	_,_ = neighbourconnection.Write(buffer)
 }
 
-func Send_newOrder(floor int, button ButtonType, chosenElevator int){
-	
+func Send_newOrder(floor int, button ButtonType, chosenElevator int){	
+	msg := msg_OrderRequest{MsgID : OrderRequest,Elev_targetID : chosenElevator, Floor : floor, Buttontype : button }
+	buffer,err := json.Marshal(msg)
+	if err != nil{
+		fmt.Println("ERROR IN MARSHAL OF SENDING ORDER")
+		fmt.Println("%s", err)
+	}
+	_,_ = neighbourconnection.Write(buffer)
 }
+
+func Send_elevInitCompleted(successfull bool){
+	msg := msg_elevInit{MsgID : Elevator_initializationStatus,Elev_targetID : elev_id, SuccessfullInit : successfull}
+	buffer,err := json.Marshal(msg)
+	if err != nil{
+		fmt.Println("ERROR IN MARSHAL OF SENDING ORDER")
+		fmt.Println("%s", err)
+	}
+	_,_ = neighbourconnection.Write(buffer)
+}
+}
+
 
 
 func GetID()(int){
@@ -89,4 +109,10 @@ func GetID()(int){
 
 func GetNelevators()(int){
 	return nElevators
+}
+
+type msg_OrderRequest struct{
+	Elev_targetID int
+	Floor int
+	Buttontype buttonType
 }

@@ -52,12 +52,12 @@ func elev_checkLegalFloors(button Elev_button_type_t, floor int)(int){
 	return 0
 }
 
-func Elev_init(){
+func Elev_init()(int){
 	init_success := Io_init()
 
 	if(init_success == 0){
 		fmt.Println("unsuccessfull elev init")
-		return
+		return 0
 	}
 	for  f := 0; f<N_FLOORS; f++{
 		for b := BUTTON_CALL_UP ; b <= BUTTON_COMMAND; b++{
@@ -67,6 +67,7 @@ func Elev_init(){
 	Elev_set_stop_lamp(0)
 	Elev_set_door_open_lamp(0)
 	Elev_set_floor_indicator(0)
+	return 1
 }
 
 func Elev_set_motor_direction(dirn Elev_motor_direction_t){

@@ -7,6 +7,7 @@ import(
 	"time"
 	"network"
 	"msg_handler"
+	"queue"
 )
 
 
@@ -17,8 +18,74 @@ const (
 	MOVING 
 	DOOR_OPEN 
 	DOOR_CLOSED
+	NOT_INITIALIZATED
 )
 
+
+func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan ch_elevOrder){		//Make a channel int in main
+	Event_init()
+	msgType := -1
+	for{
+		//running elevator
+		for floor := 0; i<4;i++{
+			for buttontype :=0;k < 3; k++{
+				if(floor == 0 && buttontype == 1){
+					continue
+				}else if(floor == 3 && buttontype == 0){
+					continue	
+				}
+				if(buttontype != 2 && elev_driver.Elev_get_button_signal(elev_driver.Elev_button_type_t(buttontype),floor) == 1){			//outside button pressed
+					Event_OutsideButtonPressed(floor, buttontype)
+				}		
+				else if(elev_driver.Elev_get_button_signal(elev_driver.Elev_button_type_t(buttontype),floor) == 1){							//inside button pressed
+					Event_newQueueRequest(floor,queue.Button_type(buttontype))					
+
+				}
+				if(queue.Orders[floor][buttontype] == 1){
+					FSM.Event_queueNotEmpty()
+				}
+			}
+		}
+		currentfloor := currentFloor()
+		//fmt.Println(currentfloor)
+		elev_driver.Elev_set_floor_indicator(2)
+		if(currentfloor >= 0 && currentfloor<4){
+			elev_driver.Elev_set_floor_indicator(currentfloor)
+			for i:= 0; i <3;i++{
+				if(queue.Orders[currentfloor][i] == 1){
+					FSM.Event_floorInQueue(currentfloor)
+					fmt.Println(currentfloor)
+					//fmt.Println(queue.Orders)
+					//fmt.Printf("Queue at: %i", currentfloor)
+				}
+			}
+		}
+
+		select{
+			case msgrecv := <-C_elevator:
+				msgType = msgrecv
+			default:
+				msgTy = -1 
+		}
+		if(msgType != -1){
+			switch(msgType){
+			case 1:
+				order := <-C_order
+				Event_evaluateRequest(order.Floor, order.Button)
+				//Recv Order request evaluation
+			case 2:
+				order := <-C_order
+				Event_newQueueRequest(order.Floor, order.Button)
+				//Recv Order request
+			case 3:
+				//Recv elevator status from all elevators
+			}
+
+
+		}
+	}
+
+}
 
 
 
@@ -27,7 +94,13 @@ const (
 var state_slave state_slaveElevator
 
 func Event_init(){
-	elev_driver.Elev_init() // this should be tested during phase 1 initiliazation possibly. Also send a value indicating it was not properly initiated?
+	init_success := elev_driver.Elev_init() // this should be tested during phase 1 initiliazation possibly. Also send a value indicating it was not properly initiated?
+	if(init_success == 0){
+		fmt.Println("Initialization failed")
+		state_slave = NOT_INITIALIZATED
+		Send_elevInitCompleted(false)
+		return
+	}
 	queue.Queue_init(4) // we take 4 floors currently
 	if(elev_driver.Elev_get_floor_sensor_signal() != 0){
 		elev_driver.Elev_set_motor_direction(-1)
@@ -39,6 +112,7 @@ func Event_init(){
 		elev_driver.Elev_set_motor_direction(0) // c
 	}
 	state_slave = IDLE
+	Send_elevInitCompleted(true)
 	fmt.Println("Init done")
 }
 
@@ -109,20 +183,34 @@ func Event_doorTimeout(){
 }
 func Event_newQueueRequest(floor int, button queue.Button_type){
 // add order regardless of current state
+	switch(state_slave){
+	case NOT_INITIALIZATED:
+			return
+	}
 	fmt.Printf("queueRequest in floor: %d \n", floor+1)
 	queue.Orders[floor][button] = 1
 	fmt.Println(queue.Orders)
 	elev_driver.Elev_set_button_lamp(elev_driver.Elev_button_type_t(button), floor,1)
 }
 
-func Event_OutsideButtonPressed(floor int, button queue.Button_type){
+func Event_outsideButtonPressed(floor int, button queue.Button_type){
+	switch(state_slave){
+	case NOT_INITIALIZATED:
+			return
+	}
 	//Accepting a button outside pressed does not matter in which state we are. All orders will be accessed.
 	score := queue.CalculateOrderScore(floor, button)
 	score_array := []int{score}
 	msg_handler.send_requestedOrder(score_array, floor,button)			
 }
+
+
 // ADD LIGHTS TO THE BUTTONS
-func Event_evaluateRequest(requestedOrder msg_orderRequest){
+func Event_evaluateRequest(requestedOrder msg_orderRequestEvaluation){
+	switch(state_slave){
+	case NOT_INITIALIZATED:
+			return
+	}
 	if(elev_id == requestedOrder.elev_id){
 		highestElevatorScore := 0
 		winningElevator := 0
@@ -148,4 +236,3 @@ func Event_evaluateRequest(requestedOrder msg_orderRequest){
 	}
 
 }
-func Send_newOrder(floor int, button ButtonType, chosenElevator int){
