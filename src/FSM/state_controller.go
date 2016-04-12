@@ -25,8 +25,16 @@ const (
 func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan ch_elevOrder){		//Make a channel int in main
 	Event_init()
 	msgType := -1
+	notSingleElevator := false
 	for{
 		//running elevator
+		if(msg_handler.GetNelevators() > 1){
+			notSingleElevator = true
+		}
+		else{
+			notSingleElevator = false
+		}
+		msg_handler.GetNelevators
 		for floor := 0; i<4;i++{
 			for buttontype :=0;k < 3; k++{
 				if(floor == 0 && buttontype == 1){
@@ -34,7 +42,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan ch_elev
 				}else if(floor == 3 && buttontype == 0){
 					continue	
 				}
-				if(buttontype != 2 && elev_driver.Elev_get_button_signal(elev_driver.Elev_button_type_t(buttontype),floor) == 1){			//outside button pressed
+				if((buttontype != 2 && elev_driver.Elev_get_button_signal(elev_driver.Elev_button_type_t(buttontype),floor) == 1) && notSingleElevator ){			//outside button pressed
 					Event_OutsideButtonPressed(floor, buttontype)
 				}		
 				else if(elev_driver.Elev_get_button_signal(elev_driver.Elev_button_type_t(buttontype),floor) == 1){							//inside button pressed
@@ -42,7 +50,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan ch_elev
 
 				}
 				if(queue.Orders[floor][buttontype] == 1){
-					FSM.Event_queueNotEmpty()
+					Event_queueNotEmpty()
 				}
 			}
 		}
@@ -53,14 +61,17 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan ch_elev
 			elev_driver.Elev_set_floor_indicator(currentfloor)
 			for i:= 0; i <3;i++{
 				if(queue.Orders[currentfloor][i] == 1){
-					FSM.Event_floorInQueue(currentfloor)
+					Event_floorInQueue(currentfloor)
 					fmt.Println(currentfloor)
 					//fmt.Println(queue.Orders)
 					//fmt.Printf("Queue at: %i", currentfloor)
 				}
 			}
 		}
-
+		if(!notSingleElevator){
+			continue
+			//skip the last part because it isonly for multiple elevators.
+		}
 		select{
 			case msgrecv := <-C_elevator:
 				msgType = msgrecv
@@ -87,6 +98,49 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan ch_elev
 
 }
 
+func Thread_elevatorCommRecv(C_elevatorCommand chan int,C_order chan ch_elevOrder){//assume it has made a connection for listening. This requires a connection first.
+	//PAPPA is joey a faggot?
+	conn := msg_handler.GetNeighbourConnection()
+	buffer := make([]byte, 1024)
+	var message msg_handler.Message
+	for{
+		n,err := conn.Read(buffer)
+		if (err != nil){
+			fmt.Println("ERROR IN READING ELEVATOR MESSAGE")
+		fmt.Println(err)
+		}
+		if(n != 0){
+			_ = json.Unmarshal(buffer[:n],&message)
+		
+			switch(message.MsgID){	
+			case msg_handler.OrderRequestEvaluation:
+				C_elevatorCommand <- 1
+				C_order.Floor <- message.Floor
+				C_order.Buttontype <-message.Buttontype
+			case msg_handler.OrderRequest:
+				if(message.Elev_targetID == msg_handler.GetID())
+					C_elevatorCommand <- 2
+					C_order.Floor <- message.Floor
+					C_order.Buttontype <- message.Buttontype
+				}else{
+					msg_handler.Send_newOrder(message.Floor, message.Buttontype, message.Elev_targetID)	
+				}
+			case msg_handler.Elevator_initializationStatus:
+					//something.
+				if(message.elev_id == msg_handler.GetID()){
+					//This elevator was the one initializing the command for status.
+					if(message.SuccessfullInit == true){
+						//All elevators are in working order fuck yeah! send nothing.
+					}else{
+						//Not all elevators are in working order. Must send a message to every elevator with the failed target id. If it doesnt work
+						//after a second
+						//message.Elev_failedID 
+
+					}
+				}
+			}
+		}
+}
 
 
 
@@ -236,3 +290,7 @@ func Event_evaluateRequest(requestedOrder msg_orderRequestEvaluation){
 	}
 
 }
+
+
+
+

@@ -23,10 +23,10 @@ const(
 	Elevator_initializationStatus
 )	 		
 
-type message struct{
+type Message struct{
 	//First define the type and elev_id which is always relevant
 	MsgID msgType
-	elev_id int
+	Elev_id int
 
 	//initalization_msg
 	New_id int // Giving a new ID to a new elevator
@@ -35,27 +35,27 @@ type message struct{
 	NextElevatorPort string
 
 	//general Elev msg variables:
-
-
-	//order Request Evaluation
-	[]Elev_score int
 	Floor int
 	Buttontype buttonType
+	//order Request Evaluation
+	[]Elev_score int
+	//Floor int
+	//Buttontype buttonType
 	//msg order request
 
 	Elev_targetID int
-	Floor int
+	//Floor int
 	Buttontype buttonType
 
 	//elev_init
 	Elev_targetID int
 	SuccesfullInit bool
+	Elev_failedID int
 
 
 }
 
 
-}
 
 
 type initialization_msg struct {

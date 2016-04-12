@@ -10,7 +10,6 @@ const (
 	BUTTON_CALL_UP Button_type = iota //declares type with 0 and increments for each new variable
 	BUTTON_CALL_DOWN
 	BUTTON_COMMAND
-/
 )
 
 type queueCommands[] Button_type // queueorder commands u dont need it.
@@ -20,7 +19,7 @@ var Last_direction int
 var n_floors int
 //var Ordersorders [][]int
 var MainFloor int
-func Queue_init(n_total_floors int){
+func Queue_init(n_total_floors int)(int){
        // queueSystems := make([]queue
         //var quetest queueCommands
         //quetest = []Button_type{0,0,0}
@@ -41,7 +40,7 @@ func Queue_init(n_total_floors int){
         //queueSystem = queueSystems
         
         Println(Orders)
-
+        
 }
 
 //Algorithm for choosing the next queue

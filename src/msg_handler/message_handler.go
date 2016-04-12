@@ -71,35 +71,39 @@ func Init_newElevator(init_msg initialization_msg){
 }
 
 func Send_requestedOrderEvaluation([]elev_score int, floor int, buttontype buttonType){
-	msg := msg_orderRequestEvaluation{MsgID : OrderRequestEvaluation,Elev_id: elev_id, []Elev_score : []elev_score,Floor : floor, ButtonType : buttontype}
-	buffer,err := json.Marshal(msg)
+	msg := Message{MsgID : OrderRequestEvaluation,Elev_id: elev_id, []Elev_score : []elev_score,Floor : floor, ButtonType : buttontype}
+	send_msg(msg)
+	/*buffer,err := json.Marshal(msg)
 	if err != nil{
 		fmt.Println("ERROR IN MARSHAL OF REQUESTED ORDER")
 		fmt.Println("%s", err)
-	}
-	_,_ = neighbourconnection.Write(buffer)
+	}*/
+	
+	//_,_ = neighbourconnection.Write(buffer)
 }
 
 func Send_newOrder(floor int, button ButtonType, chosenElevator int){	
-	msg := msg_OrderRequest{MsgID : OrderRequest,Elev_targetID : chosenElevator, Floor : floor, Buttontype : button }
-	buffer,err := json.Marshal(msg)
+	msg := Message{MsgID : OrderRequest,Elev_targetID : chosenElevator, Floor : floor, Buttontype : button }
+	send_msg(msg)
+	/*buffer,err := json.Marshal(msg)
 	if err != nil{
 		fmt.Println("ERROR IN MARSHAL OF SENDING ORDER")
 		fmt.Println("%s", err)
 	}
-	_,_ = neighbourconnection.Write(buffer)
+	_,_ = neighbourconnection.Write(buffer)*/
 }
 
 func Send_elevInitCompleted(successfull bool){
-	msg := msg_elevInit{MsgID : Elevator_initializationStatus,Elev_targetID : elev_id, SuccessfullInit : successfull}
-	buffer,err := json.Marshal(msg)
+	msg := Message{MsgID : Elevator_initializationStatus,Elev_targetID : elev_id, SuccessfullInit : successfull}
+	send_msg(msg)
+	/*buffer,err := json.Marshal(msg)
 	if err != nil{
 		fmt.Println("ERROR IN MARSHAL OF SENDING ORDER")
 		fmt.Println("%s", err)
 	}
-	_,_ = neighbourconnection.Write(buffer)
+	_,_ = neighbourconnection.Write(buffer)*/
 }
-}
+
 
 
 
@@ -115,4 +119,21 @@ type msg_OrderRequest struct{
 	Elev_targetID int
 	Floor int
 	Buttontype buttonType
+}
+
+func send_msg(msg Message){
+	buffer,err := json.Marshal(msg)
+	if err != nil{
+		fmt.Println("ERROR IN MARSHAL OF SENDING message")
+		fmt.Println("%s", err)
+	}
+	_,_ = neighbourconnection.Write(buffer)
+
+	/*switch(msg.MsgID){
+		case Initialization:
+			//joey pls insert
+		//case Elevator joey pls
+		case OrderRequestEvaluation:
+
+	}*/
 }
