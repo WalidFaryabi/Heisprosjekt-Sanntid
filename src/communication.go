@@ -1,8 +1,9 @@
 
 package main
-import ("fmt"
+import ( "fmt"
 		"./netw"
 		"./msg_handler"
+		"./FSM"
 )
 func waitForNeighbourElevAddr() {
 	for {
@@ -18,6 +19,11 @@ func init_localAddress() {
 }
 
 func main() {
+
+	go FSM.Thread_elevatorStateMachine()
+	for{
+	}
+
 	init_localAddress()
 	msg_handler.Broadcast()
 	
