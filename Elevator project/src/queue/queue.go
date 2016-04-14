@@ -12,9 +12,22 @@ const (
 	BUTTON_COMMAND
 )
 
+type CheckQueueOption int  //Different options for how you want to use the checkQueueList function. Total orders? Orders in upper direction? etc.
+const(
+	ALL_ORDERS CheckQueueOption = iota // 0
+	BUTTON_UP_ORDERS 	// 1
+	BUTTON_DOWN_ORDERS 	// 2 
+	BUTTON_COMMAND_ORDERS //3
+//	BUTTON_DOWN_ORDERS_UP 
+	/*BUTTON_DOWN_ORDERS_DOWN = 0x05
+	BUTTON_COMMAND_UP = 0x06
+	BUTTON_COMMAND_DOWN = 0x07
+	NO_DIRECTION = 0x10			//if you want to check amount of orders without specifying direction, then OR this with the desired command BUTTON_COMMAND_UP | NO_DIRECTION FOR INSTANCE
+	// last identifier _UP/_DOWN the direction */
+)
 var Orders[][] int
-var Last_floor int
-var Last_direction int
+var last_floor int
+var last_direction int
 var n_floors int
 
 var MainFloor int
@@ -115,21 +128,52 @@ func SetNextMainFloor(){
 
 
 }
-
-func CheckQueueList()(int){
-	total_orders := 0
-	for i:= 0; i<4;i++{
-		for k:= 0; k<3; k++{
-			if(Orders[i][k] ==1){
-				total_orders++
+ALL_ORDERS CheckQueueOption = iota
+	BUTTON_UP_ORDERS
+	BUTTON_DOWN_ORDERS 
+func CheckQueueList(desiredOption CheckQueueOption,startFloor, direction int)(int){ 	//this function will return amount of orders of a given button command or all commands, given on a startfloor, 
+	total_orders := 0														// in the relevant direction. Direction is either -1 or 1.
+	lastFloorToCount :=( n_floor + (n_floor * direction) ) / 2 		//This will set the floor to either 0 or top floor. Reducing if statements.
+	conditionalOffset := (1 - direction)/-2 				//if direction is -1, then this will be -1. if it is 1 then it will be 0. will use to offset correct conditions for for loop.
+	switch(desiredOption){
+		case ALL_ORDERS:
+			for floor:= startFloor; floor != lastFloorToCount + conditionalOffset ;floor=+direction{
+				for button:= BUTTON_CALL_UP; button<= BUTTON_COMMAND; button++{
+					if(Orders[floor][button] ==1){
+						total_orders++
+					}
+				}
+		
 			}
-		}
-	
+			return total_orders
+		case BUTTON_UP_ORDERS,BUTTON_DOWN_ORDERS, BUTTON_COMMAND_ORDERS:
+			for floor := startFloor ; floor != lastFloorToCount + conditionalOffset ; floor+=direction{
+				if(Orders[floor][BUTTON_CALL_UP] == 1){
+					total_orders++
+
+				}
+			}
+			return total_orders++
+		case BUTTON_DOWN_ORDERS:
+			for floor := startFloor; floor != lastFloorToCount + conditionalOffset ; floor+=direction{
+				if(Orders[floor][BUTTON_CALL_DOWN] == 1){
+					total_orders++
+				}
+
+			} 
+		case BUTTON_COMMAND_ORDERS:
+				for floor := startFloor; floor < n_floors; floor++{
+					if(Orders)
+
+				}
+			
 	}
 	if(total_orders > 0){
-		return total_orders	
+		return total_orders
 	}
-	return -1
+	else{
+		return -1
+	}
 }
 
 func CalculateOrderScore(floor int, button int)(float64){ // algorithm for calculating whether an elevator should take an order or not.
@@ -195,4 +239,10 @@ func GetNFloors()(int){
 	return n_floors
 }
 
+func GetLastDirection()(int){
+	return Last_direction
+}
 
+func GetLastFloor()(int){
+	return last_floor
+}

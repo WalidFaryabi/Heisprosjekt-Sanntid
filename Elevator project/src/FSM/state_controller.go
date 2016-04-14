@@ -10,7 +10,6 @@ import(
 	//"encoding/json"
 )
 
-var n_floors int = 0
 
 type state_slaveElevator int
 const (
@@ -38,6 +37,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 	fmt.Println("We get here")
 	msgType := -1
 	notSingleElevator := false
+	n_floors := queue.GetNFloors() /
 	for{
 		//running elevator
 		if(msg_handler.GetNelevators() > 1){
@@ -45,9 +45,10 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		}else{
 			notSingleElevator = false
 		}
+
 	//fmt.Println("we get here ")
 	//	msg_handler.GetNelevators not used
-		for floor := 0; floor<n_floors;floor++{
+		for floor := 0; floor< n_floors; floor++{
 			for buttontype:=elev_driver.BUTTON_CALL_UP;buttontype <= elev_driver.BUTTON_CALL_DOWN; buttontype++{
 				if(floor == 0 && buttontype == elev_driver.BUTTON_CALL_DOWN){
 					continue
@@ -61,7 +62,6 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 
 				}
 				if(queue.Orders[floor][buttontype] == 1){
-					
 					Event_queueNotEmpty()
 				}
 			}	
@@ -71,6 +71,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		//elev_driver.Elev_set_floor_indicator(2)
 		if(currentfloor >= 0 && currentfloor<4){
 			elev_driver.Elev_set_floor_indicator(currentfloor)
+			Last_direction = queue.GetLastDirection()
 			for button:= elev_driver.BUTTON_CALL_UP; button <=elev_driver.BUTTON_COMMAND;button++{
 				switch(button){
 					case elev_driver.BUTTON_CALL_UP: 
@@ -217,7 +218,7 @@ func Event_queueNotEmpty(){
                     queue.SetNextMainFloor()
                	    //queue.MainFloor = 2
                     fmt.Printf("Main floor: %i", queue.MainFloor)
-                    elev_driver.Elev_set_motor_direction((queue.Last_direction))
+                    elev_driver.Elev_set_motor_direction((queue.GetLastDirection()))
                     //elev_driver.Elev_set_motor_direction(1)
                     if(queue.MainFloor == queue.Last_floor){
 						state_slave = IDLE					
@@ -229,8 +230,7 @@ func Event_queueNotEmpty(){
         }
 }
 
-func Event_floorInQueue(floor int, button int){ // this is activated if one of the orders are on the floor. Goes through every kind of order.
-	queue.Last_floor = floor
+func Event_floorInQueue(floor int, button int){ // this is activated if one of the orders are on the floor.
 	switch(state_slave){
 	case MOVING:
 		fmt.Println("Floor in queue called, moving state.")
@@ -258,7 +258,7 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		
 		//<- timer.C use this to indicate timer done
 	case IDLE:
-		fmt.Println("Floor in queue called, IDLE state")
+		fmt.Println("Floor in queue called, IDLE state") //this means an order was given while at the same floor.
 
 	}
 		elev_driver.Elev_set_button_lamp(button, floor, 0)
@@ -266,9 +266,9 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		elev_driver.Elev_set_door_open_lamp(1)
 		state_slave = DOOR_OPEN
 		//timer := time.NewTimer(time.Second * 3 )
-		dur := 3
-		something := time.Duration(dur)*time.Second
-		time.AfterFunc(something,Event_doorTimeout)
+		seconds := 3
+		timer_seconds := time.Duration(seconds)*time.Second
+		time.AfterFunc(timer_seconds,Event_doorTimeout)
 
 
 }
@@ -282,7 +282,7 @@ func Event_doorTimeout(){
 			state_slave = IDLE
 			fmt.Println("Main floor reached")
 		}else{
-			elev_driver.Elev_set_motor_direction(queue.Last_direction)
+			elev_driver.Elev_set_motor_direction(queue.GetLastDirection())
 			state_slave = MOVING
 		}
 	}
