@@ -3,7 +3,7 @@ package main
 import ( "fmt"
 		"./netw"
 		"./msg_handler"
-		"./FSM"
+	//	"./FSM"
 )
 func waitForNeighbourElevAddr() {
 	for {
@@ -29,11 +29,11 @@ func main() {
 	
 	//FSM.Event_init()
 	//for{}
-	stfu_joey := make(chan msg_handler.Ch_elevOrder)
-	stfu_joey_pls := make(chan int)
-	go FSM.Thread_elevatorStateMachine(stfu_joey_pls, stfu_joey)
-	for{
-	}
+	//stfu_joey := make(chan msg_handler.Ch_elevOrder)
+	//stfu_joey_pls := make(chan int)
+	//go FSM.Thread_elevatorStateMachine(stfu_joey_pls, stfu_joey)
+	//for{
+	//}
 
 	init_localAddress()
 	msg_handler.Broadcast()

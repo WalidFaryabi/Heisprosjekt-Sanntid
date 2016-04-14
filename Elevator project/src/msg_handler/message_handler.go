@@ -17,14 +17,33 @@ const broadcastPort string = "20022"
 
 var LocalIP	string
 var LocalPort int
+var newElevatorAddress string
 var neighbourElevatorAddress string
 var neighbourConnection *net.UDPConn
 
 var elev_id int 			// each elevator has an unique ID
-var nElevators int = 1	
+var nElevators int	
 var IPaddress string // along with port
 
 
+func singleElevator() {
+	if nElevators == 0 && neighbourElevatorAddress == "" {
+		nElevators = 1;
+	}
+	if elev_id == 0 {
+		elev_id = nElevators;
+	}
+}
+
+func newElevDetected(addr string) {
+	if elev_id == 0 {
+		elev_id = nElevators
+	} else if elev_id == 1 && newElevatorAddress != addr {
+		nElevators++
+	}
+	
+	newElevatorAddress = addr
+}
 
 func send_msg(msg Message){
 	buffer,err := json.Marshal(msg)
@@ -34,24 +53,17 @@ func send_msg(msg Message){
 	}
 	
 	_,_ = neighbourConnection.Write(buffer)
-
-	/*switch(msg.MsgID){
-		case Initialization:
-			//joey pls insert
-		//case Elevator joey pls
-		case OrderRequestEvaluation:
-
-	}*/
 }
 
 
 func SendElevMessages() {
-
+	
 	msg := "Hello!"
 	addr := GetLocalAddress()
 	
 	for {
-			dial_msg := Message{StringMsg : msg, LocalAddr : addr}
+			numElev := nElevators
+			dial_msg := Message{StringMsg : msg, LocalAddr : addr, NumElev : numElev}
 			buffer,err := json.Marshal(dial_msg)
 	
 			if err != nil {
@@ -70,44 +82,39 @@ func SendElevMessages() {
 func listen(conn *net.UDPConn) {
 	buffer := make([]byte, 1024)
 	addr := ""
+	numElev := 0
 	t0 := time.Now()
 	var message Message
 
 	for {	
-			if (neighbourElevatorAddress == ""){
-				n, err := conn.Read(buffer)
-				t1 := time.Now()
-				if(t1.Sub(t0) > 2*(1000*time.Millisecond)){
-					nElevators = 1
-					fmt.Println("NUMBER OF ELEVATORS: 1")
+			n, err := conn.Read(buffer)
+			t1 := time.Now()
+			if(t1.Sub(t0) > 2*(1000*time.Millisecond)){
+				singleElevator()
+			}
+			if err != nil {
+				fmt.Println("ERROR IN READING MESSAGE")
+				fmt.Println(err)
+			}
+
+			if n != 0 {		
+				_ = json.Unmarshal(buffer[:n], &message)
+				addr = message.LocalAddr
+				numElev = message.NumElev
+				if numElev > nElevators {
+						nElevators = numElev			
+				}
+		
+				if(neighbourElevatorAddress == "") {
+					neighbourElevatorAddress = addr
+					newElevDetected(neighbourElevatorAddress)
+				}
+				if(addr != "" && neighbourElevatorAddress != addr) {
+					fmt.Println("WE HAVE DETECTED A NEW ELEVATOR WITH ADDRESS: ", addr)
+					newElevDetected(addr)
 				}
 				
-				if err != nil {
-					fmt.Println("ERROR IN READING MESSAGE")
-					fmt.Println(err)
-				}
-
-				if n != 0 {
-					_ = json.Unmarshal(buffer[:n], &message)
-					fmt.Println(message.StringMsg, message.LocalAddr[len(message.LocalAddr)-2:])
-					SetNeighbourElevatorAddress(message.LocalAddr)
-				}
-
-			} else {
-				n, err := conn.Read(buffer)
-				if err != nil {
-					fmt.Println("ERROR IN READING MESSAGE")
-					fmt.Println(err)
-				}
-				if n != 0 {
-					_ = json.Unmarshal(buffer[:n], &message)
-					
-					fmt.Println(message.StringMsg, message.LocalAddr[len(message.LocalAddr)-2:])
-					addr = message.LocalAddr
-					if (addr != "" && neighbourElevatorAddress != addr) {
-						fmt.Println("WE HAVE DETECTED A NEW ELEVATOR WITH ADDRESS: ", addr)
-					}
-				}		
+				fmt.Println(message.StringMsg, neighbourElevatorAddress, nElevators, elev_id)
 			}
 		}
 }

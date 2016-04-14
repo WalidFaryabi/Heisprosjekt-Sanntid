@@ -28,6 +28,7 @@ type Message struct{
 	Elev_id int
 	StringMsg string
 	LocalAddr string
+	NumElev int
 
 	//initalization_msg
 	New_id int // Giving a new ID to a new elevator
