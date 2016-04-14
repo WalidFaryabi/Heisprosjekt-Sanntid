@@ -3,7 +3,7 @@ package main
 import ( "fmt"
 		"./netw"
 		"./msg_handler"
-	//	"./FSM"
+		"./FSM"
 )
 func waitForNeighbourElevAddr() {
 	for {
@@ -29,22 +29,25 @@ func main() {
 	
 	//FSM.Event_init()
 	//for{}
-	//stfu_joey := make(chan msg_handler.Ch_elevOrder)
-	//stfu_joey_pls := make(chan int)
-	//go FSM.Thread_elevatorStateMachine(stfu_joey_pls, stfu_joey)
-	//for{
-	//}
+	stfu_joey := make(chan msg_handler.Ch_elevOrder)
+	stfu_joey_pls := make(chan int)
+	
+	//go msg_handler.Thread_elevatorCommRecv(stfu_joey_pls, stfu_joey)
+
+	
 
 	init_localAddress()
 	msg_handler.Broadcast()
-	
-	go msg_handler.ListenForElevMessages()	
+	go msg_handler.Thread_elevatorCommRecv(stfu_joey_pls, stfu_joey)
+	go FSM.Thread_elevatorStateMachine(stfu_joey_pls, stfu_joey)
+	//go msg_handler.ListenForElevMessages()	
     
 	waitForNeighbourElevAddr()
 	
 	msg_handler.SetNeighbourElevConnection()
 	
-	go msg_handler.SendElevMessages()
+
+	//go msg_handler.SendElevMessages()
 	
     var input string
     fmt.Scanln(&input)

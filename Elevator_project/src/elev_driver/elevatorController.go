@@ -136,6 +136,7 @@ func Elev_set_stop_lamp(value int){
 
 func Elev_get_button_signal(button , floor int) (int){
 	if(elev_checkLegalFloors(button,floor) == 1){
+		fmt.Println("%i, %i 	\n",floor, button)
 		return 0
 	}
 	if(Io_read_bit(button_channel_matrix[floor][button]) ==1){
