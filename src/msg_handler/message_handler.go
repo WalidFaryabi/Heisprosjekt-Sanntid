@@ -21,7 +21,7 @@ var neighbourElevatorAddress string
 var neighbourConnection *net.UDPConn
 
 var elev_id int 			// each elevator has an unique ID
-var nElevators int 	
+var nElevators int = 1	
 var IPaddress string // along with port
 
 
@@ -32,6 +32,7 @@ func send_msg(msg Message){
 		fmt.Println("ERROR IN MARSHAL OF SENDING message")
 		fmt.Println("%s", err)
 	}
+	
 	_,_ = neighbourConnection.Write(buffer)
 
 	/*switch(msg.MsgID){
@@ -88,7 +89,7 @@ func listen(conn *net.UDPConn) {
 
 				if n != 0 {
 					_ = json.Unmarshal(buffer[:n], &message)
-					fmt.Println(message.stringMsg, message.LocalAddr[len(message.LocalAddr)-2:])
+					fmt.Println(message.StringMsg, message.LocalAddr[len(message.LocalAddr)-2:])
 					SetNeighbourElevatorAddress(message.LocalAddr)
 				}
 
@@ -125,7 +126,7 @@ func broadcast(conn *net.UDPConn) {
 	msg := "Hello!"
 	addr := GetLocalAddress()
 	
-	broadcast_msg := Message{msg, addr}
+	broadcast_msg := Message{StringMsg : msg, LocalAddr : addr}
 
 	for {
 		if(run_bc){
@@ -166,16 +167,18 @@ func IsNeighbourElevatorAddressEmtpy()(bool) {
 
 
 ///////**************************////////////////////////
-
+/*
 func Init_newElevator(init_msg initialization_msg){
 	elev_id = init_msg.New_id
 	nElevators = init_msg.NumberOfElevators
 	neighbourIP = init_msg.NextElevatorAddr
 	neighbourPORT = init_msg.NextElevatorPort
-}
+}*/
 
-func Send_requestedOrderEvaluation(elev_score []int, floor int, buttontype buttonType){
-	msg := Message{MsgID : OrderRequestEvaluation,Elev_id : elev_id, Elev_score : elev_score,Floor : floor, ButtonType : buttontype}
+
+
+func Send_requestedOrderEvaluation(elev_score []float64, floor int, buttontype ButtonType){
+	msg := Message{MsgID : OrderRequestEvaluation,Elev_id : elev_id, Elev_score : elev_score,Floor : floor, Buttontype : buttontype}
 	send_msg(msg)
 	/*buffer,err := json.Marshal(msg)
 	if err != nil{
@@ -187,7 +190,7 @@ func Send_requestedOrderEvaluation(elev_score []int, floor int, buttontype butto
 }
 
 func Send_newOrder(floor int, button ButtonType, chosenElevator int){	
-	msg := Message{MsgID : OrderRequest,Elev_targetID : chosenElevator, Floor : floor, Buttontype : button }
+	msg := Message{MsgID : OrderRequest,Elev_targetID: chosenElevator, Floor : floor, Buttontype : button }
 	send_msg(msg)
 	/*buffer,err := json.Marshal(msg)
 	if err != nil{

@@ -5,7 +5,7 @@ import(
 )
 
 
-type buttonType int
+type ButtonType int
 const(
 	BUTTON_UP = iota
 	BUTTON_DOWN
@@ -37,25 +37,26 @@ type Message struct{
 
 	//general Elev msg variables:
 	Floor int
-	Buttontype buttonType
+	Buttontype ButtonType
 	//order Request Evaluation
-	Elev_score []int
+	Elev_score []float64
 	//Floor int
 	//Buttontype buttonType
 	//msg order request
 
 	Elev_targetID int
 	//Floor int
-	Buttontype buttonType
 
 	//elev_init
-	Elev_targetID int
-	SuccesfullInit bool
+	
+	SuccessfullInit bool
 	Elev_failedID int
 }
 
-type ch_elevOrder struct{
+type Ch_elevOrder struct{
 	Floor int
-	Button buttonType
+	Button ButtonType
+	Elev_score []float64
+	Elev_id int
 }
 

@@ -52,12 +52,32 @@ func SetNextMainFloor(){
 	order_lowestFloorOrder :=  0//lowest floor order
 //	top_current_difference := n_floors - Last_floor //Amount of elevators between current and top floor
 //	first_current_difference := Last_floor - 0 //Amount of elevators between current and first floor
-	if(Orders[Last_floor][BUTTON_COMMAND] == 1){
-	        MainFloor = Last_floor
+	if((Orders[n_floors-1][BUTTON_COMMAND] == 1 || Orders[n_floors-1][BUTTON_CALL_DOWN] == 1) && (Last_floor == 0)){
+	        MainFloor = n_floors - 1
 	        return
+	}else if((Orders[0][BUTTON_COMMAND] == 1 || Orders[0][BUTTON_CALL_UP] == 1) && (Last_floor == n_floors-1)){
+		MainFloor = 0	
+		return
+	}
+	if(CheckQueueList() == 1){
+		for floor := 0; floor <n_floors; floor++{
+			for button := 0; button < 3 ; button++{
+				if(Orders[floor][button] == 1){
+					MainFloor = floor
+					if(Last_floor > floor){
+						Last_direction = -1
+					}else if (Last_floor < floor){
+						Last_direction = 1
+					}else{
+						Last_direction = 0		
+					}
+					return
+				}
+			}
+		}	
 	}
 
-	//First rake up amount of floor orders in eacch direction
+	//First rake up amount of floor orders in each direction
 	 for j := Last_floor ; j < n_floors ; j++ {
 	 	orders_up+= Orders[j][BUTTON_CALL_UP] + Orders[j][BUTTON_COMMAND] // count up relevant orders.
 	        if(Orders[j][BUTTON_CALL_UP] == 1 || Orders[j][BUTTON_COMMAND] == 1){
@@ -118,6 +138,10 @@ func CheckQueueList()(int){
 				total_orders++
 			}
 		}
+	
+	}
+	if(total_orders > 0){
+		return total_orders	
 	}
 	return -1
 }
@@ -181,5 +205,8 @@ func CalculateOrderScore(floor int, button Button_type)(float64){ // algorithm f
 
 }
 
+func GetNFloors()(int){
+	return n_floors
+}
 
 
