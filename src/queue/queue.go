@@ -5,41 +5,27 @@ import(
 )
 
 
-type Button_type int
+var Button_type int
 const (
-	BUTTON_CALL_UP Button_type = iota //declares type with 0 and increments for each new variable
+	BUTTON_CALL_UP int= iota //declares type with 0 and increments for each new variable
 	BUTTON_CALL_DOWN
 	BUTTON_COMMAND
 )
 
-type queueCommands[] Button_type // queueorder commands u dont need it.
 var Orders[][] int
 var Last_floor int
 var Last_direction int
 var n_floors int
-//var Ordersorders [][]int
+
 var MainFloor int
 func Queue_init(n_total_floors int)(){
-       // queueSystems := make([]queue
-        //var quetest queueCommands
-        //quetest = []Button_type{0,0,0}
         for j := 0 ; j<n_total_floors; j++{
          Orders = append(Orders, []int {0,0,0})
-       }
-      
-       
-      // slice1 := []int{0,0,0}
-       //for k:= 0; k<n_total_floors ; k++{
-       	//	Ordersorders = append(Ordersorders,[]int{0,0,0})
-      // }
-
+    	}
         n_floors = n_total_floors
         Last_floor = 0
-        Last_direction = 1      
-        //Commands,len(queueSystem),n_floors)
-        //queueSystem = queueSystems
-        
-        Println(Orders)
+        Last_direction = 1        
+        Println(Orders) // confirmation that the order queue equals the correct amount of floors.
         
 }
 
@@ -146,7 +132,7 @@ func CheckQueueList()(int){
 	return -1
 }
 
-func CalculateOrderScore(floor int, button Button_type)(float64){ // algorithm for calculating whether an elevator should take an order or not.
+func CalculateOrderScore(floor int, button int)(float64){ // algorithm for calculating whether an elevator should take an order or not.
 	var priorityScore float64 = 0
 
 	nCurrentOrders := CheckQueueList()

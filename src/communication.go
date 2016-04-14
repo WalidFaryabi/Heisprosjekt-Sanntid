@@ -18,9 +18,20 @@ func init_localAddress() {
 	msg_handler.LocalPort = netw.GetPort()
 }
 
-func main() {
+type gos int
 
-	go FSM.Thread_elevatorStateMachine()
+func blablo(test gos){
+	fmt.Println("TEST")
+	fmt.Println(test)
+}
+
+func main() {
+	
+	//FSM.Event_init()
+	//for{}
+	stfu_joey := make(chan msg_handler.Ch_elevOrder)
+	stfu_joey_pls := make(chan int)
+	go FSM.Thread_elevatorStateMachine(stfu_joey_pls, stfu_joey)
 	for{
 	}
 
