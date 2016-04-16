@@ -3,19 +3,28 @@ package FSM
 import(
 	"fmt"
 	"../elev_driver"
-	"../queue"
+	//"../queue"
 	"time"
 	//"../netw"
 	"../msg_handler"
 	//"encoding/json"
-	"bufio"
-	"strconv"
-	"os"
-	"strings"
-	"../netw"	//using it temporarily to test
+	//"bufio"
+
+	//"os"
+	
+	//"../netw"	//using it temporarily to test
 )
 
+/***************************************************************************************************************************\\\\\\\\
+This package contains the elevator system.
 
+In this file, the state machine is written. 
+
+Stop button is not taking into account.
+
+*****************************************************************************************************************************//////
+
+/******************************************Variables*****************************************/
 
 type state_slaveElevator int
 const (
@@ -27,19 +36,12 @@ const (
 	NOT_INITIALIZATED
 )
 
-func currentFloor()(int){
-	for i:= 0; i<4;i++{
-		if(elev_driver.Elev_get_floor_sensor_signal() == i){
-			return i
-		}
-	}
-	return -1
-}
 
 var state_slave state_slaveElevator
-var InitDone bool = false
-var prevfloor,prevbuttontype int = -1,-1	//avoid smashing same button.
-var prevExternalFloor, prevExternalButton int = -1,-1
+var InitDone bool = false				//used to acknowledge initialization
+var prevfloor,prevbuttontype int = -1,-1	//Using this to avoid avoid spam after holding a button. 
+var prevExternalFloor, prevExternalButton int = -1,-1	//same with external buttons. Not sending same request multiple times.
+
 func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder){		//Make a channel int in main
 	nFloors := setNFloors()
 	Event_init( nFloors )
@@ -48,7 +50,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 	timer_miliseconds := time.Duration(miliseconds)*time.Millisecond
 	msgType := -1
 	notSingleElevator := true
-	n_floors := queue.GetNFloors() 
+	n_floors := GetNFloors() 
 
 	//var floorb, buttontypeb int 
 	for{
@@ -83,11 +85,11 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					prevExternalFloor = floor
 					prevExternalButton = buttontype
 					Event_outsideButtonPressed(floor,buttontype)
-				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && queue.Orders[floor][buttontype] == 0){							//inside button pressed
+				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && orders[floor][buttontype] == 0){							//inside button pressed
 					Event_newQueueRequest(floor,buttontype)					
 
 				}
-				if( (queue.Orders[floor][buttontype] == 1)&& (prevfloor != floor) && (prevbuttontype != buttontype) ) {
+				if( (orders[floor][buttontype] == 1)&& (prevfloor != floor) && (prevbuttontype != buttontype) ) {
 					prevfloor,prevbuttontype = floor,buttontype //to avoid excessive button mashing order...
 				//	fmt.Printf("This is called even though we are not in an idle state yet. Floor : %i, buttontype : %i", floor,buttontype)
 					Event_queueNotEmpty()
@@ -102,26 +104,28 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		if(currentfloor >= 0 && currentfloor<4){
 		
 			elev_driver.Elev_set_floor_indicator(currentfloor)
-			last_direction := queue.GetLastDirection()
-			queue.SetLastFloor(currentfloor)
+			last_direction := GetLastDirection()
+			SetLastFloor(currentfloor)
 			
 			for button:= elev_driver.BUTTON_CALL_UP; button <=elev_driver.BUTTON_COMMAND;button++{
 				switch(button){
 					case elev_driver.BUTTON_CALL_UP: 
-						if( (last_direction == 1) && (queue.Orders[currentfloor][button] == 1)){
+						if( (lastDirection == 1) && (orders[currentfloor][button] == 1)){
+					
+
 							Event_floorInQueue(currentfloor,button)
-						}else if(last_direction == -1 && queue.Orders[currentfloor][button] == 1 && (queue.CheckQueueList(queue.ALL_ORDERS,0,1) == 1) || 															(queue.Orders[0][button] == 1 && currentfloor == 0) ){
+						}else if(last_direction == -1 && orders[currentfloor][button] == 1 && (checkQueueList(ALL_ORDERS,0,1) == 1) || 	(orders[0][button] == 1 && currentfloor == 0) ){
 							Event_floorInQueue(currentfloor,button)
 						}
 					case elev_driver.BUTTON_CALL_DOWN:
-						if(last_direction == -1 && queue.Orders[currentfloor][button] == 1){
+						if(lastDirection == -1 && orders[currentfloor][button] == 1){
 							Event_floorInQueue(currentfloor,1)
-						}else if( (last_direction == 1) && (queue.Orders[currentfloor][button] == 1) && (queue.CheckQueueList(queue.ALL_ORDERS,0,1) == 1) || 								( (queue.Orders[n_floors - 1][button] == 1) && 				currentfloor == n_floors-1 )) {
+						}else if( (lastDirection == 1) && (orders[currentfloor][button] == 1) && (checkQueueList(ALL_ORDERS,0,1) == 1) || ( (orders[n_floors - 1][button] == 1) && currentfloor == n_floors-1 )) {
 							
 							Event_floorInQueue(currentfloor,button)
 						}
 					case elev_driver.BUTTON_COMMAND:
-						if(queue.Orders[currentfloor][button] == 1){
+						if(orders[currentfloor][button] == 1){
 							Event_floorInQueue(currentfloor,button)
 						}
 						
@@ -147,28 +151,36 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		}
 		if(msgType != -1){
 			switch(msgType){
-			case 1:
+			case msg_handler.OrderRequestEvaluation:
 				order := <-C_order
 				Event_evaluateRequest(order.Floor, int(order.Button),order.Elev_id, order.Elev_score)
 				//Recv Order request evaluation
-			case 2:
+			case msg_handler.OrderRequest:
 				fmt.Println("state machine thread has received the command")
 				order := <-C_order
-				if(queue.Orders[order.Floor][order.Button] == 1){
+				if(orders[order.Floor][order.Button] == 1){
 						
 				}else{
-				Event_newQueueRequest(order.Floor,int(order.Button))
+			 		Event_newQueueRequest(order.Floor,int(order.Button))
 				}
 				//Recv Order request
-			case 3:
+			case 10:
 				//Recv elevator status from all elevators
 			}
-
-
 		}
 	}
-
 }
+
+
+func currentFloor()(int){
+	for i:= 0; i<4;i++{
+		if(elev_driver.Elev_get_floor_sensor_signal() == i){
+			return i
+		}
+	}
+	return -1
+}
+
 													
 
 
@@ -182,7 +194,7 @@ func Event_init(nTotalFloors int){
 		//msg_handler.Send_elevInitCompleted(false)
 		return
 	}
-	queue.Queue_init(nTotalFloors) // 
+	queue_init(nTotalFloors) // 
 	
 	
 	if(elev_driver.Elev_get_floor_sensor_signal() != 0){
@@ -207,15 +219,16 @@ func Event_queueNotEmpty(){
 
         switch state_slave{
                case IDLE:
+
                	    fmt.Println("Queue not empty")
                	    //queue.MainFloor = 3
                	
-                    queue.SetNextMainFloor()
+                    setNextMainFloor()
                	    //queue.MainFloor = 2
-                    fmt.Printf("Main floor: %i", queue.MainFloor)
-                    elev_driver.Elev_set_motor_direction((queue.GetLastDirection()))
+                    fmt.Printf("Main floor: %i", GetMainFloor())
+                    elev_driver.Elev_set_motor_direction((GetLastDirection()))
                     //elev_driver.Elev_set_motor_direction(1)
-                    if(queue.MainFloor == queue.GetLastFloor()){
+                    if(mainFloor == GetLastFloor()){
 						state_slave = IDLE					
 					}else{
 						state_slave = MOVING
@@ -261,10 +274,10 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		prevfloor = -1
 		prevbuttontype = -1
 		elev_driver.Elev_set_button_lamp(button, floor, 0)
-		queue.Orders[floor][button] = 0
+		orders[floor][button] = 0
 		elev_driver.Elev_set_door_open_lamp(1)
 		state_slave = DOOR_OPEN
-		fmt.Println(queue.Orders)
+		fmt.Println(orders)
 		//timer := time.NewTimer(time.Second * 3 )
 		seconds := 3
 		timer_seconds := time.Duration(seconds)*time.Second
@@ -277,12 +290,13 @@ func Event_doorTimeout(){
 	switch(state_slave){
 	case DOOR_OPEN:
 		elev_driver.Elev_set_door_open_lamp(0)
-		if(queue.MainFloor == queue.GetLastFloor()){
+		if(GetMainFloor() == GetLastFloor()){
 			state_slave = IDLE
 			fmt.Println("Main floor reached")
 		}else{
-			elev_driver.Elev_set_motor_direction(queue.GetLastDirection())
+			elev_driver.Elev_set_motor_direction(GetLastDirection())
 			state_slave = MOVING
+			fmt.Println("Still in moving state")
 		}
 	}
 
@@ -296,8 +310,8 @@ func Event_newQueueRequest(floor int, button int){
 			return
 	}
 	fmt.Printf("queueRequest in floor: %d \n", floor+1)
-	queue.Orders[floor][button] = 1
-	fmt.Println(queue.Orders)
+	orders[floor][button] = 1
+	fmt.Println(orders)
 	elev_driver.Elev_set_button_lamp(button, floor,1)
 }
 
@@ -308,7 +322,7 @@ func Event_outsideButtonPressed(floor int, button int){
 			return
 	}
 	//Accepting a button outside pressed does not matter in which state we are. All orders will be accessed.
-	score := queue.CalculateOrderScore(floor, button)
+	score := calculateOrderScore(floor, button)
 	score_array := []float64{score}
 	
 	fmt.Println(score_array)
@@ -340,7 +354,7 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 			fmt.Println("this elevator is the winer")
 			fmt.Print(" ")
 			fmt.Println(winningElevator)
-			queue.Orders[floor][button] = 1
+			orders[floor][button] = 1
 		}else{
 			msg_handler.Send_newOrder(floor, msg_handler.ButtonType(button), winningElevator)
 			fmt.Println("Winning elevator has been calculated")
@@ -349,7 +363,7 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 		
 	}else{
 		fmt.Println("forwarding")
-		score := queue.CalculateOrderScore(floor, button)
+		score := calculateOrderScore(floor, button)
 		elev_score = append(elev_score, score)
 		msg_handler.Send_requestedOrderEvaluation(elev_score, floor,msg_handler.ButtonType(button))
 	}
@@ -358,47 +372,21 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 
 
 func setNFloors()(int){
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Enter Amount of floors")
-	nFloorString, _ := reader.ReadString('\n')
-	nFloorString = strings.Replace(nFloorString, "\n", "",-1)
-	nFloors,err := strconv.Atoi(nFloorString)
-	if(err != nil){
-		fmt.Println("Error in assigning n_floors")
-	}
-	fmt.Println(nFloors)
-	return nFloors
+	return msg_handler.NumberUserInput("Enter Amount of floors")
 }
 func setOrder()(int, int){
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("floor Order")
-	nfloorOrder, _ := reader.ReadString('\n')
-	nfloorOrder = strings.Replace(nfloorOrder, "\n", "",-1)
-	nfloorOrderint,err := strconv.Atoi(nfloorOrder)
-	if(err != nil){
-		fmt.Println("Error in assigning n_floors")
-	}
-	
-	reader2 := bufio.NewReader(os.Stdin)
-	fmt.Println("button order")
-	nbuttonOrder, _ := reader2.ReadString('\n')
-	nbuttonOrder = strings.Replace(nbuttonOrder, "\n", "",-1)
-	nbuttonOrderint,err := strconv.Atoi(nbuttonOrder)
-	if(err != nil){
-		fmt.Println("Error in assigning n_floors")
-	}
-	return nfloorOrderint,nbuttonOrderint
+	return msg_handler.NumberUserInput("floor Order"),msg_handler.NumberUserInput("Button Order")
 }
 
 
 
-func TestElevator(){
+//func TestElevator(){
 	/*for{
 		if(InitDone){
 			break
 		}
 	}*/
-	fmt.Println("whats going on")
+	/*fmt.Println("whats going on")
 	//msg_handler.SemaphoreMessage <- 1
 	nFloors := setNFloors()
 	Event_init( nFloors )
@@ -414,7 +402,7 @@ func TestElevator(){
 	var floorb, buttontypeb int 
 	for{
 		time.Sleep(timer_miliseconds)
-		if(queue.Orders[floorb][buttontypeb] != 1 ){
+		if(orders[floorb][buttontypeb] != 1 ){
 			floorb,buttontypeb =setOrder()	
 			//queue.Orders[floorb][buttontypeb] = 1
 			//broadcast_msg :=msg_handler.Message{MsgID : msg_handler.OrderRequest,TargetID : 1, Floor : floorb, Buttontype : buttontypeb }
@@ -427,5 +415,4 @@ func TestElevator(){
 
 	}
 
-}
-
+}*/

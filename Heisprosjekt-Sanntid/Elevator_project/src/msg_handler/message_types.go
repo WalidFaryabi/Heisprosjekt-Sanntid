@@ -24,7 +24,6 @@ const(
 	NewElevatorConnectionEstablished
 	NewElevatorInitConfig
 	BroadcastAcknowledged
-
 )	 		
 
 type Message struct{
@@ -34,6 +33,7 @@ type Message struct{
 	StringMsg string
 	LocalAddr string	//Local address of the elevator sending this message
 	NumElev int 		//Number of elevators in the system.
+	LocalAddrOfFirstElevator string // the address of the elevator with elev_id = 1
 
 	//initalization_msg
 	New_id int // Giving a new ID to a new elevator
