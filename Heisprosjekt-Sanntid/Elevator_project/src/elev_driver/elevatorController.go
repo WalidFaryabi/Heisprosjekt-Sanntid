@@ -36,6 +36,8 @@ var button_channel_matrix = [N_FLOORS][N_BUTTONS] int {
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 }
 
+
+
 func elev_checkLegalFloors(button int, floor int)(int){
 	if(floor <0){
 		fmt.Println("YOU ARE ASKING BELOW FLOOR 0 HOW? FATAL ERROR")

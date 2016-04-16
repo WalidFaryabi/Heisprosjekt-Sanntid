@@ -8,7 +8,13 @@ import(
 	//"../netw"
 	"../msg_handler"
 	//"encoding/json"
+	"bufio"
+	"strconv"
+	"os"
+	"strings"
+	"../netw"	//using it temporarily to test
 )
+
 
 
 type state_slaveElevator int
@@ -31,17 +37,28 @@ func currentFloor()(int){
 }
 
 var state_slave state_slaveElevator
+var InitDone bool = false
+var prevfloor,prevbuttontype int = -1,-1
 func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder){		//Make a channel int in main
-	fmt.Println("We get not here")
-	Event_init(4)
-	fmt.Println("We get here")
+	nFloors := setNFloors()
+	Event_init( nFloors )
+	InitDone = true
 	miliseconds := 40
 	timer_miliseconds := time.Duration(miliseconds)*time.Millisecond
 	msgType := -1
 	notSingleElevator := true
 	n_floors := queue.GetNFloors() 
-	prevfloor,prevbuttontype := 0,0
+
+	//var floorb, buttontypeb int 
 	for{
+		/*if(queue.Orders[floorb][buttontypeb] != 1 ){
+			floorb,buttontypeb =setOrder()	
+			
+			queue.Orders[floorb][buttontypeb] = 1
+			fmt.Println(queue.Orders)
+		}*/
+		
+		
 		time.Sleep(timer_miliseconds)
 		//running elevator
 		if(msg_handler.GetNelevators() > 1){
@@ -67,8 +84,9 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					Event_newQueueRequest(floor,buttontype)					
 
 				}
-				if(queue.Orders[floor][buttontype] == 1  && prevfloor != floor && prevbuttontype != buttontype){
+				if( (queue.Orders[floor][buttontype] == 1)&& (prevfloor != floor) && (prevbuttontype != buttontype) ) {
 					prevfloor,prevbuttontype = floor,buttontype //to avoid excessive button mashing order...
+				//	fmt.Printf("This is called even though we are not in an idle state yet. Floor : %i, buttontype : %i", floor,buttontype)
 					Event_queueNotEmpty()
 				}
 			}	
@@ -131,7 +149,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 				Event_evaluateRequest(order.Floor, int(order.Button),order.Elev_id, order.Elev_score)
 				//Recv Order request evaluation
 			case 2:
-			
+				fmt.Println("state machine thread has received the command")
 				order := <-C_order
 				if(queue.Orders[order.Floor][order.Button] == 1){
 						
@@ -161,7 +179,8 @@ func Event_init(nTotalFloors int){
 		//msg_handler.Send_elevInitCompleted(false)
 		return
 	}
-	queue.Queue_init(nTotalFloors) // we take 4 floors currently
+	queue.Queue_init(nTotalFloors) // 
+	
 	
 	if(elev_driver.Elev_get_floor_sensor_signal() != 0){
 		elev_driver.Elev_set_motor_direction(-1)
@@ -177,7 +196,7 @@ func Event_init(nTotalFloors int){
 	
 	//msg_handler.Send_elevInitCompleted(true) crashes the program.
 	
-	fmt.Println("Init done")
+	fmt.Printf("Init done with %i floors \n", nTotalFloors)
 
 }
 
@@ -198,7 +217,9 @@ func Event_queueNotEmpty(){
 					}else{
 						state_slave = MOVING
 					}
-					
+				default:
+					//ignore the allocation of queue if the order is not at idle
+					prevfloor,prevbuttontype = -1,-1
                     
         }
 }
@@ -234,6 +255,8 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		fmt.Println("Floor in queue called, IDLE state") //this means an order was given while at the same floor.
 
 	}
+		prevfloor = -1
+		prevbuttontype = -1
 		elev_driver.Elev_set_button_lamp(button, floor, 0)
 		queue.Orders[floor][button] = 0
 		elev_driver.Elev_set_door_open_lamp(1)
@@ -320,4 +343,74 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 
 
 
+func setNFloors()(int){
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Enter Amount of floors")
+	nFloorString, _ := reader.ReadString('\n')
+	nFloorString = strings.Replace(nFloorString, "\n", "",-1)
+	nFloors,err := strconv.Atoi(nFloorString)
+	if(err != nil){
+		fmt.Println("Error in assigning n_floors")
+	}
+	fmt.Println(nFloors)
+	return nFloors
+}
+func setOrder()(int, int){
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("floor Order")
+	nfloorOrder, _ := reader.ReadString('\n')
+	nfloorOrder = strings.Replace(nfloorOrder, "\n", "",-1)
+	nfloorOrderint,err := strconv.Atoi(nfloorOrder)
+	if(err != nil){
+		fmt.Println("Error in assigning n_floors")
+	}
+	
+	reader2 := bufio.NewReader(os.Stdin)
+	fmt.Println("button order")
+	nbuttonOrder, _ := reader2.ReadString('\n')
+	nbuttonOrder = strings.Replace(nbuttonOrder, "\n", "",-1)
+	nbuttonOrderint,err := strconv.Atoi(nbuttonOrder)
+	if(err != nil){
+		fmt.Println("Error in assigning n_floors")
+	}
+	return nfloorOrderint,nbuttonOrderint
+}
 
+
+
+func TestElevator(){
+	/*for{
+		if(InitDone){
+			break
+		}
+	}*/
+	fmt.Println("whats going on")
+	//msg_handler.SemaphoreMessage <- 1
+	nFloors := setNFloors()
+	Event_init( nFloors )
+	miliseconds := 40
+	timer_miliseconds := time.Duration(miliseconds)*time.Millisecond
+	const broadcastIP string = "129.241.187.255"
+	const broadcastPort string = "20022"
+//	msg_handler.LocalIP = netw.GetLocalIP()
+//	msg_handler.LocalPort = netw.GetPort()
+	broadcastAddr := broadcastIP+":"+broadcastPort
+	brdcast_conn := netw.GetConnectionForDialing(broadcastAddr)
+	msg_handler.TestSetNeighBourElevConnection(brdcast_conn)
+	var floorb, buttontypeb int 
+	for{
+		time.Sleep(timer_miliseconds)
+		if(queue.Orders[floorb][buttontypeb] != 1 ){
+			floorb,buttontypeb =setOrder()	
+			//queue.Orders[floorb][buttontypeb] = 1
+			//broadcast_msg :=msg_handler.Message{MsgID : msg_handler.OrderRequest,TargetID : 1, Floor : floorb, Buttontype : buttontypeb }
+			msg_handler.Send_newOrder(floorb,msg_handler.ButtonType(buttontypeb), 1)
+			fmt.Println("Message sent")
+			bufio.NewReader(os.Stdin).ReadBytes('\n') 
+		}
+
+
+
+	}
+
+}

@@ -18,8 +18,13 @@ const(
 	InitNeighbourElevConn
 	OrderRequestEvaluation
 	OrderRequest
-	NewElevatorconnection
+	NewElevatorConnection
 	Elevator_initializationStatus
+	BroadcastMsg
+	NewElevatorConnectionEstablished
+	NewElevatorInitConfig
+
+
 )	 		
 
 type Message struct{
@@ -27,14 +32,18 @@ type Message struct{
 	MsgID msgType
 	Elev_id int
 	StringMsg string
-	LocalAddr string
-	NumElev int
+	LocalAddr string	//Local address of the elevator sending this message
+	NumElev int 		//Number of elevators in the system.
 
 	//initalization_msg
 	New_id int // Giving a new ID to a new elevator
 	NumberOfElevators int
 	NextElevatorAddr string
 	NextElevatorPort string
+
+	//new elevator connection
+	NewElevatorLocalAddress string
+
 
 	//general Elev msg variables:
 	Floor int
@@ -46,6 +55,7 @@ type Message struct{
 	//msg order request
 
 	Elev_targetID int
+	TargetID int //no difference just want a better variable
 	//Floor int
 
 	//elev_init
@@ -61,3 +71,8 @@ type Ch_elevOrder struct{
 	Elev_id int
 }
 
+var commandTypes int
+const(
+	NEW_ELEVATOR_CONFIG int = iota
+
+)
