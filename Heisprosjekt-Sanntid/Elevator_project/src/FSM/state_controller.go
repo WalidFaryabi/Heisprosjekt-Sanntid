@@ -38,7 +38,8 @@ func currentFloor()(int){
 
 var state_slave state_slaveElevator
 var InitDone bool = false
-var prevfloor,prevbuttontype int = -1,-1
+var prevfloor,prevbuttontype int = -1,-1	//avoid smashing same button.
+var prevExternalFloor, prevExternalButton int = -1,-1
 func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder){		//Make a channel int in main
 	nFloors := setNFloors()
 	Event_init( nFloors )
@@ -76,9 +77,11 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 				}else if(floor == n_floors - 1 && buttontype == elev_driver.BUTTON_CALL_UP){
 					continue	
 				}
-				if((buttontype != elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1) && false){// && notSingleElevator ){			//outside button pressed					
+				if((buttontype != elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1) && false && (prevExternalButton == -1 && prevExternalFloor == -1)){// && notSingleElevator ){			//outside button pressed					
 					fmt.Println("This is where u fucked up walid")
 					fmt.Printf(" %i		%i 	\n", floor,buttontype)
+					prevExternalFloor = floor
+					prevExternalButton = buttontype
 					Event_outsideButtonPressed(floor,buttontype)
 				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && queue.Orders[floor][buttontype] == 0){							//inside button pressed
 					Event_newQueueRequest(floor,buttontype)					
@@ -299,6 +302,7 @@ func Event_newQueueRequest(floor int, button int){
 }
 
 func Event_outsideButtonPressed(floor int, button int){
+	fmt.Println("Outside button pressed")
 	switch(state_slave){
 	case NOT_INITIALIZATED:
 			return
@@ -308,17 +312,19 @@ func Event_outsideButtonPressed(floor int, button int){
 	score_array := []float64{score}
 	
 	fmt.Println(score_array)
-	//msg_handler.Send_requestedOrderEvaluation(score_array, floor,msg_handler.ButtonType(button) )			
+	msg_handler.Send_requestedOrderEvaluation(score_array, floor,msg_handler.ButtonType(button) )			
 }
 
 
 // ADD LIGHTS TO THE BUTTONS
 func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []float64){
+	fmt.Println("Asked to calculate")
 	switch(state_slave){
 	case NOT_INITIALIZATED:
 			return
 	}
 	if(msg_handler.GetID()== elev_id){
+		fmt.Println("received the calculating order back, lets see")
 		highestElevatorScore := 0.0
 		winningElevator := 0
 		for i := 0 ; i<msg_handler.GetNelevators() ;i++{
@@ -327,14 +333,22 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 				winningElevator = i + 1
 			}
 		}
+		prevExternalButton = 1
+		prevExternalFloor = 1 
 		if(elev_id == winningElevator ){
 			//this elevator is the winner
+			fmt.Println("this elevator is the winer")
+			fmt.Print(" ")
+			fmt.Println(winningElevator)
 			queue.Orders[floor][button] = 1
 		}else{
 			msg_handler.Send_newOrder(floor, msg_handler.ButtonType(button), winningElevator)
+			fmt.Println("Winning elevator has been calculated")
+			fmt.Printf("winning elevator : %i \n", winningElevator)
 		}
 		
 	}else{
+		fmt.Println("forwarding")
 		score := queue.CalculateOrderScore(floor, button)
 		elev_score = append(elev_score, score)
 		msg_handler.Send_requestedOrderEvaluation(elev_score, floor,msg_handler.ButtonType(button))
@@ -414,3 +428,4 @@ func TestElevator(){
 	}
 
 }
+

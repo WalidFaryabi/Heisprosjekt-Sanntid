@@ -68,6 +68,8 @@ func GetPort() (int) {
 	return port
 }
 
+
+
 /*
 func GetUDPAddress(ipAddress string, port int) (*net.UDPAddr) {
 	var address string

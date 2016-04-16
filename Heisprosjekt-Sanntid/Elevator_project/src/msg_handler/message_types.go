@@ -23,7 +23,7 @@ const(
 	BroadcastMsg
 	NewElevatorConnectionEstablished
 	NewElevatorInitConfig
-
+	BroadcastAcknowledged
 
 )	 		
 
