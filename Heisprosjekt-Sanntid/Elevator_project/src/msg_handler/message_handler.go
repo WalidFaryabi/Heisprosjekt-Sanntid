@@ -29,10 +29,13 @@ const broadcastIP string = "129.241.187.255" //using this as a basis for broadca
 //Conn/Socket pointers
 var receiverConn *net.UDPConn
 var neighbourConnection *net.UDPConn
+//varbroadcast_conn *net.UDPConn
+
 
 //Address containers
 var neighbourElevatorAddress string
 var localAddress string = ""
+var broadcastAddr string = ""
 
 var localIP	string
 var localPort int
@@ -47,9 +50,10 @@ var singleStateElevator bool = true
 
 //semaphores
 var SemaphoreMessage chan int = make(chan int, 1)
-var destroyReceive bool = false //just to kill one of the read threads
+//var destroyReceive bool = false //just to kill one of the read threads
 //modify this to be a standard listen function
 var SemaphoreRead chan int = make(chan int, 1)
+var SemaphoreNewConnection chan int = make(chan int, 1)
 
 /******************************************Public Functions*****************************************/
 
@@ -132,16 +136,21 @@ func Task_sendElevMessages( C_message chan Message) {
 							}
 						}*/
 						case BroadcastMsg:	
+						    <-SemaphoreNewConnection
 							msg := Message{MsgID : BroadcastAcknowledged, NewElevatorLocalAddress : msgRecv.LocalAddr, NumElev : nElevators} // I removed "NewElevatorLocalAddress : addr" from the struct since NewElevatorAddress will be responsible for sending the localAddress to the new elevator
 							fmt.Println("Broadcast received, acknowledging it, sending nElevators to the other guy")
 							fmt.Printf("Sending elevators : %i \n", nElevators)
 							send_msg(msg)
+							SemaphoreNewConnection <-1
 
 						case BroadcastAcknowledged:
 							send_msg(msgRecv)
 
 						case NewElevatorConnectionEstablished:
 							send_msg(msgRecv) // We just want the first elevator to know that we have successfully connected to it
+						case Debug:
+							fmt.Println(msgRecv.StringMsg)
+							fmt.Println("Yeah nuggah i got u")
 				}
 
 			}
@@ -149,6 +158,7 @@ func Task_sendElevMessages( C_message chan Message) {
 }
 func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int, C_order chan Ch_elevOrder) {
 	buffer := make([]byte, 1024)
+	time.Sleep(1 * time.Second)
 
 	//addr := "" currently not using this.
 	//numElev := 0	currentlyn not using this.
@@ -165,7 +175,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 	//timerbla := time.NewTimer(time.Second * 5)
 	for {	
 			//fmt.Println("THIS GETS CALLED")
-			if(destroyReceive){break}
+			
 			n, _ := conn.Read(buffer) //does this even have a deadline? Ask joey. Set deadline on this for 10 sec.	currently not using error.
 
 			if(n != 0){
@@ -173,20 +183,28 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 				switch(message.MsgID){
 
 				case NewElevatorConnection:
-					if(broadcastLastLocalAddress != message.LocalAddrOfFirstElevator){
-						broadcastLastLocalAddress = message.LocalAddrOfFirstElevator
+				//	if(broadcastLastLocalAddress != message.LocalAddrOfFirstElevator){
+					if(broadcastLastLocalAddress  != message.NewElevatorLocalAddress){
+						//broadcastLastLocalAddress = message.LocalAddrOfFirstElevator
+						broadcastLastLocalAddress = message.NewElevatorLocalAddress
+						if(message.TargetID == 2){elev_id = 2 }
 						if (elev_id == message.TargetID) {
 							fmt.Println("WE HAVE REACHED THE LAST ELEVATOR")
-							setNeighbourElevatorAddress(message.LocalAddrOfFirstElevator)
+							setNeighbourElevatorAddress(message.LocalAddr)
 							setNeighbourElevConnection()
 							fmt.Println("elev_id: ", elev_id)
 							fmt.Println("nElevators: ", nElevators)
-
+							singleStateElevator = false
 							establishedConnectionMsg := Message{MsgID : NewElevatorConnectionEstablished}
 							C_message <- establishedConnectionMsg
-						} else {
+						} /*else if(elev_id == (message.TargetID-1) ){ //this is the previous last elevator. 
+							neighbourConnection.Close()
+							setNeighbourElevatorAddress(message.NextElevatorAddr)
+							setNeighbourElevConnection()
 							C_message <- message
 
+						}*/else{
+							C_message <- message
 						}
 					}
 					//newNeighbourLocaladdr := message.LocalAddr //local address of the new elevator // not using this yet.
@@ -206,29 +224,39 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 							setNeighbourElevConnection() 
 							fmt.Println("broadcast msg received: ", message.StringMsg, neighbourElevatorAddress) 
 							C_message<-message 	// we let the current "message" struct be passed as usual and let the BroadcastMsg in the send task handle it.
-
-							newElevatorMessage := Message{MsgID : NewElevatorConnection, LocalAddrOfFirstElevator : GetLocalAddress(), TargetID : nElevators} // Create a message that should be sent to the new elevator
-
+							
+							newElevatorMessage := Message{MsgID : NewElevatorConnection, LocalAddr: GetLocalAddress(), TargetID : nElevators} // Create a message that should be sent to the new elevator
+							<-SemaphoreNewConnection
 							C_message<-newElevatorMessage
+							SemaphoreNewConnection <-1
 
 						} else {
 							numberOfElev := nElevators
-							newElevatorMessage := Message{MsgID : NewElevatorConnection, LocalAddrOfFirstElevator : GetLocalAddress(), TargetID : numberOfElev} // Create a message that should be sent to the new elevator
+							newElevatorMessage := Message{MsgID : NewElevatorConnection, LocalAddr : GetLocalAddress(), TargetID : numberOfElev-1,
+						    NextElevatorAddr : message.LocalAddr}
+							 // Create a message that should be sent to the new elevator
 
 							// we let the current "message" struct be passed as usual and let the BroadcastMsg in the send task handle it.
 							C_message<-message
-
+							<-SemaphoreNewConnection
 							C_message<-newElevatorMessage
+							SemaphoreNewConnection <-1
 						}
-					}					
+					}
+
+									
 			
 				case BroadcastAcknowledged:
 					//someone acknowledged your message.
 					if (elev_id == 0) { // Since the elev_id is zero, this is the elevator who sent the broadcast, and should therefor receive the acknoledge
 						fmt.Println("Broadcast acknowledged")
-						elev_id = message.NumElev // we set the elev_id such that the message from NewElevatorConnection, which is behind, will correctly identify this as the Target_ID							
+						elev_id = message.NumElev // we set the elev_id such that the message from NewElevatorConnection, which is behind, will correctly identify this as the Target_ID	
+						<-	SemaphoreNewConnection 						
 						nElevators = elev_id
+						SemaphoreNewConnection <- 1 //must make sure if we apply a new elev ID before we send the newElevatorconnection message.
+					//	singleStateElevator = false
 					} else { // pass the acknowledge message to the neighbour and update the the current nElevators variable
+						fmt.Println("inside broadcst acknowledge")
 						nElevators = message.NumElev
 
 						// need to check if the current elevator is the second to last elevator, such that we can rewire the connection to the new elevator
@@ -242,6 +270,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 
 						C_message<-message
 					}
+				
 
 				case NewElevatorConnectionEstablished:
 					fmt.Println("The newest elevator has successfully connected to us!")
@@ -282,11 +311,33 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 							//message.Elev_failedID 
 
 						}
-					}	
+					}
+				case Debug:
+					if(message.TargetID == elev_id){
+					fmt.Println(message.StringMsg)	
+					C_message <- message
+					}
+					
 				}
 			}
 		}
 	for{}
+}
+
+func Task_broadcastSupervisor(){
+	//time.Sleep(60 * time.Second)	//wait 30 sec after init before you run this.
+	//broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
+	//broadcast_Tim
+	for{
+		if(singleStateElevator){//if it is not connected to any elevator, it will try broadcasting for 3 sec every 3 min.
+			broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
+			broadcast(broadcast_conn)
+		}
+		time.Sleep(120 * time.Second)
+		fmt.Println("skipped broadcasting due to connection")
+
+
+	}
 }
 
 
@@ -355,6 +406,11 @@ func send_msg(msg Message){
 	fmt.Println("semaphore done")
 }
 
+func Send_debug(text string, targetId int){
+	msg := Message{MsgID : Debug, StringMsg : text,TargetID : targetId}
+	send_msg(msg)
+}
+
 /**********************Get / Set functions**********************/
 
 func setNeighbourElevatorAddress(address string) {
@@ -401,12 +457,13 @@ func InitElevatorNetwork(){
 	init_localAddress()
 	broadcastPortInput := NumberUserInput("Broadcast port:")
 
-	broadcastAddr := broadcastIP + ":" + strconv.Itoa(20000 + broadcastPortInput) //broadcastIP should not be a constant string. It should be dependent on which local area network we are in. make this possible joey.
-	broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
-	broadcast(broadcast_conn)
+	broadcastAddr = broadcastIP + ":" + strconv.Itoa(20000 + broadcastPortInput) //broadcastIP should not be a constant string. It should be dependent on which local area network we are in. make this possible joey.
+	//broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
+	//broadcast(broadcast_conn)
 
 	receiverAddress := 	"" + ":" + strconv.Itoa(20000+localPort)
 	setReceiverConn(receiverAddress) // Walid: I put broadcast() above setReceiverConn() because we were receiving messages from our own broadcast after it expires
+	//broadcast(broadcast_conn)
 }
 
 func init_localAddress() {
