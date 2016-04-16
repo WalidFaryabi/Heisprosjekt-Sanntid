@@ -65,10 +65,10 @@ func send_msg(msg Message){
 		fmt.Println("ERROR IN MARSHAL OF SENDING message")
 		fmt.Println("%s", err)
 	}
-	fmt.Println("awaiting semaphore")
 	<-SemaphoreMessage
 	_,_ = neighbourConnection.Write(buffer)
 	SemaphoreMessage <- 1
+	fmt.Println("semaphore done")
 }
 
 
@@ -83,6 +83,7 @@ func SendElevMessages( C_message chan Message) {
 	for {
 			if(singleStateElevator){
 				//broadcast data every once in a while untill it gets connected?
+
 			}			
 			newMsg = false
 			select{
@@ -140,7 +141,6 @@ func SendElevMessages( C_message chan Message) {
 								msg := Message{MsgID : NewElevatorConnectionEstablished, Elev_id : elev_id }
 								send_msg(msg)
 							}
-
 						}
 					case BroadcastMsg:	
 						msg := Message{MsgID : BroadcastAcknowledged, NewElevatorLocalAddress : addr, NumElev : nElevators}
@@ -192,7 +192,8 @@ func ReceiveElevMessages(C_message chan Message) {
 	//timerbla := time.NewTimer(time.Second * 5)
 	for {	if(destroyReceive){break}
 	//		timer_beforeRead := time.Now()
-			fmt.Println("waiting for message")
+		//	fmt.Println("waiting for message")
+			//fmt.Println("localaddress: ",conn.RemoteAddr().String())
 			//<- SemaphoreRead	// need deadline here.
 			n, _ := conn.Read(buffer) //does this even have a deadline? Ask joey. Set deadline on this for 10 sec.	currently not using error.
 			//SemaphoreRead <- 1
@@ -202,9 +203,8 @@ func ReceiveElevMessages(C_message chan Message) {
 				if(nElevators == 1){
 					singleStateElevator = true
 				}*/
-
 		//	}
-			fmt.Println("Received something")
+		//	fmt.Println("Received something")
 			//Theres...actually no listen commands? I receive data..might implement some sort of command system in order to listen for some specifics..
 			if(n != 0){
 				_ = json.Unmarshal(buffer[:n], &message)
@@ -214,9 +214,8 @@ func ReceiveElevMessages(C_message chan Message) {
 						broadcastLastLocalAddress = message.NewElevatorLocalAddress
 						C_message <- message
 					}
+					fmt.Println("NewElevatorConnection")
 					//newNeighbourLocaladdr := message.LocalAddr //local address of the new elevator // not using this yet.
-					
-					
 					
 				case BroadcastMsg:
 					//established connection with someone else. 
@@ -230,9 +229,11 @@ func ReceiveElevMessages(C_message chan Message) {
 						nElevators++
 						SetNeighbourElevatorAddress(message.LocalAddr)
 						setNeighbourElevConnection() 	//connection established.
+						fmt.Println("broadcast msg received, nElevators = 1, ", message.StringMsg, neighbourElevatorAddress)
+
 						C_message<-message
-						fmt.Println("broadcast msg received, nElevators = 1")
 					}else{//commented out to test a special situation.
+						fmt.Println("something else")
 						//message.MsgID = NewElevatorConnection
 						//C_message <-message
 						//fmt.Println("Broadcast msg received nelevators != 1")
@@ -243,71 +244,14 @@ func ReceiveElevMessages(C_message chan Message) {
 					//someone acknowledged your message. Now you wait for proper connection
 					SetNeighbourElevatorAddress(message.NewElevatorLocalAddress )
 					setNeighbourElevConnection()
+					fmt.Println(neighbourElevatorAddress)
 					nElevators = message.NumElev
 					elev_id = nElevators
 					fmt.Println("Broadcast acknowledged")
 				}
-
-
-
-			}else if(n == 0 && false){//here we either deattach every elevator creating downtime for 10sec+ or we cut out the node that is not sending.
-				//received no message for 10 secs.
-				AssignElevatorVariables()
-
-				if(nElevators == 1){
-					singleStateElevator = true
-				}
-			}else if(n == 0){
-				fmt.Println("received nothing")
-			}
-		
-
-
-				/*}else if
-				( n != 0 )	 {		
-				_ = json.Unmarshal(buffer[:n], &message)
-				switch(message.MsgID){
-				case NewElevatorconnection:
-
-
-				}*
-				addr = message.LocalAddr
-				numElev = message.NumElev
-				if b != message.NewElevAddr {
-				   b = message.NewElevAddr
-				}
-				if numElev > nElevators {
-						nElevators = numElev			
-				}*/
-				
-			/*	if(neighbourElevatorAddress == "") {
-					neighbourElevatorAddress = addr
-					newElevDetected(neighbourElevatorAddress)
-				}
-				if(addr != "" && neighbourElevatorAddress != addr) {
-					//fmt.Println("WE HAVE DETECTED A NEW ELEVATOR WITH ADDRESS: ", addr)
-					newElevDetected(addr)
-				}
-				if((nElevators-elev_id) == 1 && elev_id != 1) {
-					// WE ARE THE LAST ELEVATOR
-					fmt.Println("WE ARE THE LAST ELEVATOR")
-					neighbourElevatorAddress = newElevatorAddress
-					GetNeighbourElevConnection().Close()
-		
-					setNeighbourElevConnection()
-
-				}
-				if newElevatorAddress != b && b != "" && b != neighbourElevatorAddress {
-						newElevatorAddress = b
-				}
-				fmt.Println(message.StringMsg, neighbourElevatorAddress, nElevators, elev_id, newElevatorAddress)
-			}
-			if err != nil {
-				fmt.Println("ERROR IN READING MESSAGE")
-				fmt.Println(err)
-			}*/
-		
-	}	
+		}	
+//		for{}
+	}
 	for{}
 }
 /*
@@ -336,7 +280,7 @@ func broadcast(conn *net.UDPConn) {
 	addr := GetLocalAddress()
 	broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
 	broadcastTimer := time.NewTimer(time.Second * 3)	//possibly make a text file where u can store values?
-LOOP:
+	LOOP:
 	for{
 		//if(!run_bc){break}
 		select{
@@ -356,8 +300,7 @@ LOOP:
 	}
 	fmt.Println("broadcast socket closed")
 	conn.Close()
-
-	
+}
 	/*broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
 
 	for {
@@ -380,8 +323,7 @@ LOOP:
 		
 	}
 	conn.Close()
-}*/
-}
+     }*/
 
 
 func IsNeighbourElevatorAddressEmtpy()(bool) {
@@ -447,6 +389,7 @@ func setNeighbourElevConnection() {
 	if neighbourConnection == nil && neighbourElevatorAddress != "" {
 		neighbourConnection = netw.GetConnectionForDialing(neighbourElevatorAddress)
 	}
+//	fmt.Println("bla: ", neighbourConnection.LocalAddr().String())
 }
 
 func send_broadcastData(){}
@@ -555,10 +498,10 @@ func InitElevatorNetwork(){
 
 	broadcastAddr := broadcastIP + ":" + strconv.Itoa(20000 + broadcastPortInput) //broadcastIP should not be a constant string. It should be dependent on which local area network we are in. make this possible joey.
 	broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
-	
-	receiverAddress := 	"" + ":" + strconv.Itoa(20000+LocalPort)
-	setReceiverConn(receiverAddress)
 	broadcast(broadcast_conn)
+
+	receiverAddress := 	"" + ":" + strconv.Itoa(20000+LocalPort)
+	setReceiverConn(receiverAddress) // Walid: I put broadcast() above setReceiverConn() because we were receiving messages from our own broadcast after it expires
 }
 
 func setReceiverConn(localaddress string){
