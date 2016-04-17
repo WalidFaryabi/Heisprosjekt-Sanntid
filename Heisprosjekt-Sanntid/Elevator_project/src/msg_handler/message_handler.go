@@ -54,6 +54,8 @@ var SemaphoreMessage chan int = make(chan int, 1)
 //modify this to be a standard listen function
 var SemaphoreRead chan int = make(chan int, 1)
 var SemaphoreNewConnection chan int = make(chan int, 1)
+var BroadcastMutex chan int = make(chan int, 1)
+
 
 /******************************************Public Functions*****************************************/
 
@@ -246,8 +248,9 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 					
 				case BroadcastMsg:
 					//fmt.Println("WE REACH INSIDE BROADCASTMSG")
+
 					if(broadcastLastLocalAddress == message.LocalAddr){break} //all broadcastlastlocal addresses are the same lol.
-			
+					
 					broadcastLastLocalAddress = message.LocalAddr
 					nElevators++
 					fmt.Println(elev_id)
@@ -321,6 +324,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 					if(message.Elev_id == GetID()){
 						fmt.Println("Full connection")
 						broadcastLastLocalAddress = ""
+						singleStateElevator = false
 					}else{
 						fmt.Println("The newest elevator has successfully connected to us!")
 						fmt.Println("forwarding the message")
@@ -384,6 +388,7 @@ func Task_broadcastSupervisor(){
 	//broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
 	//broadcast_Tim
 	for{
+
 		if(singleStateElevator){//if it is not connected to any elevator, it will try broadcasting for 3 sec every 3 min.
 			broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
 			broadcast(broadcast_conn)
@@ -413,6 +418,9 @@ func broadcast(conn *net.UDPConn) {
 				//_,_ = conn.Write(buffer)
 				break LOOP
 			default:
+			if(!singleStateElevator){
+				break LOOP
+			}
 			buffer,err := json.Marshal(broadcast_msg)
 	
 			if err != nil {

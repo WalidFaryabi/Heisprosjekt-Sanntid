@@ -29,6 +29,7 @@ func main() {
 	msg_handler.SemaphoreMessage <- 1
 	msg_handler.SemaphoreRead <-1
 	msg_handler.SemaphoreNewConnection <- 1
+	BroadcastMutex <- 1
 	stfu_joey := make(chan msg_handler.Ch_elevOrder,10)
 	
 	stfu_joey_pls := make(chan int,10)
