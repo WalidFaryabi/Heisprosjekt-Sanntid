@@ -46,7 +46,7 @@ func main() {
 	*/
 	go msg_handler.Task_sendElevMessages(C_messages)	//SendElevMessages(C_listenCommando chan int, C_message chan Message, C_elevatorCommand chan int,C_order chan Ch_elevOrder)
 	
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
 	for{}
 	//time.Sleep(10 * time.Second)

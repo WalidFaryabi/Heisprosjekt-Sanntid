@@ -183,6 +183,7 @@ func checkQueueList(desiredOption checkQueueOption,startFloor, direction int)(in
 				for button:= BUTTON_CALL_UP; button<= BUTTON_COMMAND; button++{
 					//Printf("%i \n",button)
 					if(orders[floor][button] ==1){
+						Println("We somehow have a order.")
 						total_orders++
 						highestLowestOrder = floor
 					}
@@ -210,6 +211,7 @@ func checkQueueList(desiredOption checkQueueOption,startFloor, direction int)(in
 	if(total_orders > 0){
 		return total_orders
 	}else{
+		Println("no orders were in the queue")
 		return -1
 	}
 }

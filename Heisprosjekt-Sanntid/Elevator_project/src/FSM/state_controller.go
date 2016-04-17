@@ -51,6 +51,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 	msgType := -1
 	notSingleElevator := true
 	n_floors := GetNFloors() 
+	fmt.Println(orders)
 
 	//var floorb, buttontypeb int 
 	for{
@@ -348,6 +349,8 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 		fmt.Println("received the calculating order back, lets see")
 		highestElevatorScore := 0.0
 		winningElevator := 0
+		prevExternalButton = -1
+		prevExternalFloor = -1 
 		for i := 0 ; i<msg_handler.GetNelevators() ;i++{
 			fmt.Printf("Elev score[%i] = %i \n",i, elev_score[i])
 			if(elev_score[i] >= highestElevatorScore){
@@ -355,16 +358,16 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 				winningElevator = i + 1
 			}
 		}
-		prevExternalButton = -1
-		prevExternalFloor = -1 
+		
 		if(elev_id == winningElevator ){
 			//this elevator is the winner
-			fmt.Println("this elevator is the winer")
+			fmt.Println("this elevator is the winner")
 			fmt.Print(" ")
 			fmt.Println(winningElevator)
-	
+			
 			orders[floor][button] = 1
 			fmt.Println(orders)
+
 		}else{
 			msg_handler.Send_newOrder(floor, msg_handler.ButtonType(button), winningElevator)
 			fmt.Println("Winning elevator has been calculated")
