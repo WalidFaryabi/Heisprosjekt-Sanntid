@@ -8,15 +8,15 @@ const N_FLOORS int = 4
 const N_BUTTONS int = 3
 const MOTOR_SPEED int = 2800
 
-type Elev_motor_direction_t int
+var Elev_motor_direction_t int
 const (
-	DIRN_DOWN Elev_motor_direction_t = -1
-	DIRN_STOP Elev_motor_direction_t = 0
-	DIRN_UP Elev_motor_direction_t = 1
+	DIRN_DOWN int = -1
+	DIRN_STOP int = 0
+	DIRN_UP int = 1
 )
-type Elev_button_type_t int
+var Elev_button_type_t int
 const (
-	BUTTON_CALL_UP Elev_button_type_t = iota //declares type with 0 and increments for each new variable
+	BUTTON_CALL_UP int = iota //declares type with 0 and increments for each new variable
 	BUTTON_CALL_DOWN
 	BUTTON_COMMAND
 
@@ -36,7 +36,9 @@ var button_channel_matrix = [N_FLOORS][N_BUTTONS] int {
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 }
 
-func elev_checkLegalFloors(button Elev_button_type_t, floor int)(int){
+
+
+func elev_checkLegalFloors(button int, floor int)(int){
 	if(floor <0){
 		fmt.Println("YOU ARE ASKING BELOW FLOOR 0 HOW? FATAL ERROR")
 		return 1	
@@ -52,24 +54,28 @@ func elev_checkLegalFloors(button Elev_button_type_t, floor int)(int){
 	return 0
 }
 
-func Elev_init(){
+func Elev_init()(int){
 	init_success := Io_init()
 
 	if(init_success == 0){
 		fmt.Println("unsuccessfull elev init")
-		return
+		return 0
 	}
 	for  f := 0; f<N_FLOORS; f++{
 		for b := BUTTON_CALL_UP ; b <= BUTTON_COMMAND; b++{
+			if(	f == 0 && b == 1 || (f == N_FLOORS -1) && b == 0){
+				continue			
+			}
 			Elev_set_button_lamp(b,f,0)		
 		}
 	}
 	Elev_set_stop_lamp(0)
 	Elev_set_door_open_lamp(0)
 	Elev_set_floor_indicator(0)
+	return 1
 }
 
-func Elev_set_motor_direction(dirn Elev_motor_direction_t){
+func Elev_set_motor_direction(dirn int){
 	if(dirn == 0){
 		Io_write_analog(MOTOR,0)
 	}else if (dirn > 0){
@@ -82,7 +88,7 @@ func Elev_set_motor_direction(dirn Elev_motor_direction_t){
 	
 }
 
-func Elev_set_button_lamp(button Elev_button_type_t,floor,value int){
+func Elev_set_button_lamp(button,floor,value int){
 	if(elev_checkLegalFloors(button,floor) == 1){
 		return 
 	}
@@ -95,12 +101,13 @@ func Elev_set_button_lamp(button Elev_button_type_t,floor,value int){
 }
 
 func Elev_set_floor_indicator(floor int){
-	if(floor < 0 || floor >= 3){
+	if(floor < 0 || floor > 3){
 		fmt.Println("Fatal error, non existing floor")
 		return
 	}
 	if((floor & 0x02) == 1){
 		Io_set_bit(LIGHT_FLOOR_IND1)
+		
 	}else{
 		Io_clear_bit(LIGHT_FLOOR_IND1)
 	}
@@ -109,6 +116,7 @@ func Elev_set_floor_indicator(floor int){
 	}else{
 		Io_clear_bit(LIGHT_FLOOR_IND2)
 	}
+	
 }
 
 func Elev_set_door_open_lamp(value int){
@@ -128,8 +136,9 @@ func Elev_set_stop_lamp(value int){
 	}
 }
 
-func Elev_get_button_signal(button Elev_button_type_t, floor int) (int){
+func Elev_get_button_signal(button , floor int) (int){
 	if(elev_checkLegalFloors(button,floor) == 1){
+		fmt.Println("%i, %i 	\n",floor, button)
 		return 0
 	}
 	if(Io_read_bit(button_channel_matrix[floor][button]) ==1){
