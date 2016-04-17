@@ -160,6 +160,8 @@ func Task_sendElevMessages( C_message chan Message) {
 						//	broadcastLastLocalAddress = ""
 
 							//SemaphoreNewConnection <-1
+						case ExternalOrderComplete:
+							send_msg(msgRecv)
 						case Debug:
 							if(msgRecv.TargetID == GetID()){
 							fmt.Println(msgRecv.StringMsg)
@@ -369,6 +371,13 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 
 						}
 					}
+				case ExternalOrderComplete:
+					if(message.TargetID != GetID()){
+						C_message <-message
+						C_elevatorCommand <- ExternalOrderComplete
+						channel_message := Ch_elevOrder{Floor : message.Floor, Button : message.Buttontype}
+						C_order <-channel_message
+					}
 				case Debug:
 
 					if(message.TargetID == elev_id){
@@ -476,6 +485,11 @@ func send_msg(msg Message){
 func Send_debug(text string, targetId int){
 	msg := Message{MsgID : Debug, StringMsg : text,TargetID : targetId}
 	send_msg(msg)
+}
+
+func Send_externalCommandComplete(floor,button int, targetID int){
+	externalOrderCompleteMsg := Message{MsgID : ExternalOrderComplete, Floor : floor, Buttontype : ButtonType(button), TargetID : targetID}
+	send_msg(externalOrderCompleteMsg)
 }
 
 /**********************Get / Set functions**********************/

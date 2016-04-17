@@ -25,6 +25,7 @@ const(
 	NewElevatorInitConfig
 	BroadcastAcknowledged
 	Debug
+	ExternalOrderComplete
 )	 		
 
 type Message struct{
@@ -51,6 +52,7 @@ type Message struct{
 	Buttontype ButtonType
 	//order Request Evaluation
 	Elev_score []float64
+
 	//Floor int
 	//Buttontype buttonType
 	//msg order request

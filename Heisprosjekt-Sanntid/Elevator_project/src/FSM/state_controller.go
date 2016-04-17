@@ -91,6 +91,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					fmt.Printf(" %i		%i 	\n", floor,buttontype)
 					prevExternalFloor = floor
 					prevExternalButton = buttontype
+					elev_driver.Elev_set_button_lamp(buttontype,floor,1)
 					Event_outsideButtonPressed(floor,buttontype)
 				}else if(buttontype == elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && notSingleElevator){	
 						Event_newQueueRequest(floor,buttontype)	
@@ -174,6 +175,9 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 			 		Event_newQueueRequest(order.Floor,int(order.Button))
 				}
 				//Recv Order request
+			case msg_handler.ExternalOrderComplete:
+				order_info := <-C_order
+				elev_driver.Elev_set_button_lamp(int(order_info.Button),order_info.Floor,0)
 			case 10:
 				//Recv elevator status from all elevators
 			}
@@ -281,6 +285,9 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		fmt.Println("Floor in queue called, IDLE state") //this means an order was given while at the same floor.
 
 	}
+		if(button != BUTTON_COMMAND){
+			msg_handler.Send_externalCommandComplete(floor, button, msg_handler.GetID())
+		}
 		prevfloor = -1
 		prevbuttontype = -1
 		elev_driver.Elev_set_button_lamp(button, floor, 0)
@@ -292,6 +299,8 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		seconds := 3
 		timer_seconds := time.Duration(seconds)*time.Second
 		time.AfterFunc(timer_seconds,Event_doorTimeout)
+
+		
 
 }
 
@@ -343,6 +352,8 @@ func Event_outsideButtonPressed(floor int, button int){
 // ADD LIGHTS TO THE BUTTONS
 func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []float64){
 	fmt.Printf("Asked to calculate from elevator ID : %i \n",elev_id)
+	elev_driver.Elev_set_button_lamp(button,floor,1)
+
 	switch(state_slave){
 	case NOT_INITIALIZATED:
 			return
@@ -367,6 +378,7 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 			fmt.Print(" ")
 			fmt.Println(winningElevator)
 			
+
 			orders[floor][button] = 1
 			fmt.Println(orders)
 
