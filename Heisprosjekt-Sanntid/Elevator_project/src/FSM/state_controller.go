@@ -42,7 +42,7 @@ var InitDone bool = false				//used to acknowledge initialization
 var prevfloor,prevbuttontype int = -1,-1	//Using this to avoid avoid spam after holding a button. 
 var prevExternalFloor, prevExternalButton int = -1,-1	//same with external buttons. Not sending same request multiple times.
 
-func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder, fuck bool){		//Make a channel int in main
+func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder){		//Make a channel int in main
 	nFloors := setNFloors()
 	Event_init( nFloors )
 	InitDone = true
@@ -54,9 +54,6 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 
 	//var floorb, buttontypeb int 
 	for{
-		if(fuck){
-			fmt.Println(orders)
-		}
 		/*if(queue.Orders[floorb][buttontypeb] != 1 ){
 			floorb,buttontypeb =setOrder()	
 			
@@ -333,7 +330,7 @@ func Event_outsideButtonPressed(floor int, button int){
 	score := calculateOrderScore(floor, button)
 	score_array := []float64{score}
 	
-	fmt.Println(score_array)
+	
 	msg_handler.Send_requestedOrderEvaluation(score_array, floor,msg_handler.ButtonType(button), msg_handler.GetID() )			
 }
 
@@ -350,6 +347,7 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 		highestElevatorScore := 0.0
 		winningElevator := 0
 		for i := 0 ; i<msg_handler.GetNelevators() ;i++{
+			fmt.Printf("Elev score[%i] \n", elev_score[i])
 			if(elev_score[i] >= highestElevatorScore){
 				highestElevatorScore = elev_score[i]
 				winningElevator = i + 1
