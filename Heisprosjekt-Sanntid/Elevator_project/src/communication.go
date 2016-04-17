@@ -55,14 +55,14 @@ func main() {
 	//fmt.Printf("elev id %i \n", msg_handler.GetID())
 	time.Sleep(time.Second * 10)
 	fmt.Println(msg_handler.GetID())
-	for{
+	/*for{
 		//floor := msg_handler.NumberUserInput("floor")
 		//button := msg_handler.NumberUserInput("button")
 		elev_id := msg_handler.NumberUserInput("elev id: ")
 		//msg.handler.Send_debug("Elev ID : \n")
 		msg_handler.Send_debug("ye hear me nuggah?",elev_id)
 		fmt.Printf("ELEV ID: %i \n", msg_handler.GetID())
-	}
+	}*/
 	for{}
 	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
 	for{}
