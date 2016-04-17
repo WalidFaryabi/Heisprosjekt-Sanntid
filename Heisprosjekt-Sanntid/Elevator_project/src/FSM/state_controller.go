@@ -37,22 +37,26 @@ const (
 )
 
 
+func InitElevator(){
+	nFloors := setNFloors()
+	event_init(nFloors)
+	InitDone = true	
+
+}
+
 var state_slave state_slaveElevator
 var InitDone bool = false				//used to acknowledge initialization
 var prevfloor,prevbuttontype int = -1,-1	//Using this to avoid avoid spam after holding a button. 
 var prevExternalFloor, prevExternalButton int = -1,-1	//same with external buttons. Not sending same request multiple times.
 
 func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder){		//Make a channel int in main
-	nFloors := setNFloors()
-	Event_init( nFloors )
-	InitDone = true
-	miliseconds := 40
-	timer_miliseconds := time.Duration(miliseconds)*time.Millisecond
+	//miliseconds := 40
+//	timer_miliseconds := time.Duration(miliseconds)*time.Millisecond
 	msgType := -1
-	notSingleElevator := true
+	//notSingleElevator := true
 	n_floors := GetNFloors() 
 	fmt.Println(orders)
-
+	var notSingleElevator bool = false
 	//var floorb, buttontypeb int 
 	for{
 		time.Sleep(time.Millisecond * 40)
@@ -64,7 +68,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		}*/
 		
 		
-		time.Sleep(timer_miliseconds)
+		//time.Sleep(timer_miliseconds)
 		//running elevator
 		/*if(msg_handler.GetNelevators() > 1){
 			notSingleElevator = true
@@ -73,6 +77,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		}*/
 		if(msg_handler.GetSingleElevatorState()){
 			notSingleElevator = false
+
 		}else{
 			notSingleElevator = true
 		}
@@ -92,18 +97,18 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					prevExternalFloor = floor
 					prevExternalButton = buttontype
 					elev_driver.Elev_set_button_lamp(buttontype,floor,1)
-					Event_outsideButtonPressed(floor,buttontype)
+					event_outsideButtonPressed(floor,buttontype)
 				}else if(buttontype == elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && notSingleElevator){	
-						Event_newQueueRequest(floor,buttontype)	
+						event_newQueueRequest(floor,buttontype)	
 						fmt.Println("this fuck face got activated")
 				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && orders[floor][buttontype] == 0 && !notSingleElevator){							//inside button pressed
-					Event_newQueueRequest(floor,buttontype)					
+					event_newQueueRequest(floor,buttontype)					
 						fmt.Println("This fuck face got acctivated maybe. maybe its called fuck you?")
 				}
 				if( (orders[floor][buttontype] == 1)&& (prevfloor != floor) && (prevbuttontype != buttontype) ) {
 					prevfloor,prevbuttontype = floor,buttontype //to avoid excessive button mashing order...
 				//	fmt.Printf("This is called even though we are not in an idle state yet. Floor : %i, buttontype : %i", floor,buttontype)
-					Event_queueNotEmpty()
+					event_queueNotEmpty()
 				}
 			}	
 		}
@@ -124,20 +129,20 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 						if( (lastDirection == 1) && (orders[currentfloor][button] == 1)){
 					
 
-							Event_floorInQueue(currentfloor,button)
+							event_floorInQueue(currentfloor,button)
 						}else if(last_direction == -1 && orders[currentfloor][button] == 1 && (checkQueueList(ALL_ORDERS,0,1) == 1) || 	(orders[0][button] == 1 && currentfloor == 0) ){
-							Event_floorInQueue(currentfloor,button)
+							event_floorInQueue(currentfloor,button)
 						}
 					case elev_driver.BUTTON_CALL_DOWN:
 						if(lastDirection == -1 && orders[currentfloor][button] == 1){
-							Event_floorInQueue(currentfloor,1)
+							event_floorInQueue(currentfloor,1)
 						}else if( (lastDirection == 1) && (orders[currentfloor][button] == 1) && (checkQueueList(ALL_ORDERS,0,1) == 1) || ( (orders[n_floors - 1][button] == 1) && currentfloor == n_floors-1 )) {
 							
-							Event_floorInQueue(currentfloor,button)
+							event_floorInQueue(currentfloor,button)
 						}
 					case elev_driver.BUTTON_COMMAND:
 						if(orders[currentfloor][button] == 1){
-							Event_floorInQueue(currentfloor,button)
+							event_floorInQueue(currentfloor,button)
 						}
 						
 
@@ -164,7 +169,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 			switch(msgType){
 			case msg_handler.OrderRequestEvaluation:
 				order := <-C_order
-				Event_evaluateRequest(order.Floor, int(order.Button),order.Elev_id, order.Elev_score)
+				event_evaluateRequest(order.Floor, int(order.Button),order.Elev_id, order.Elev_score)
 				//Recv Order request evaluation
 			case msg_handler.OrderRequest:
 				fmt.Println("Have received order")
@@ -172,7 +177,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 				if(orders[order.Floor][order.Button] == 1){
 						
 				}else{
-			 		Event_newQueueRequest(order.Floor,int(order.Button))
+			 		event_newQueueRequest(order.Floor,int(order.Button))
 				}
 				//Recv Order request
 			case msg_handler.ExternalOrderComplete:
@@ -200,7 +205,7 @@ func currentFloor()(int){
 
 
 
-func Event_init(nTotalFloors int){
+func event_init(nTotalFloors int){
 	init_success := elev_driver.Elev_init() // this should be tested during phase 1 initiliazation possibly. Also send a value indicating it was not properly initiated?
 	if(init_success == 0){
 		fmt.Println("Initialization failed")
@@ -229,7 +234,7 @@ func Event_init(nTotalFloors int){
 
 }
 
-func Event_queueNotEmpty(){
+func event_queueNotEmpty(){
 
         switch state_slave{
                case IDLE:
@@ -254,7 +259,7 @@ func Event_queueNotEmpty(){
         }
 }
 
-func Event_floorInQueue(floor int, button int){ // this is activated if one of the orders are on the floor.
+func event_floorInQueue(floor int, button int){ // this is activated if one of the orders are on the floor.
 	switch(state_slave){
 	case MOVING:
 		fmt.Println("Floor in queue called, moving state.")
@@ -275,7 +280,7 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 				elev_driver.Elev_set_button_lamp(elev_driver.BUTTON_CALL_DOWN,floor,0)
 		}*/
 		elev_driver.Elev_set_motor_direction(0)
-		elev_driver.Elev_set_floor_indicator(floor)
+		elev_driver.Elev_set_floor_indicator(floor+1)
 
 		
 		//timer := time.NewTimer(time.Second * 3 )
@@ -285,7 +290,7 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		fmt.Println("Floor in queue called, IDLE state") //this means an order was given while at the same floor.
 
 	}
-		if(button != BUTTON_COMMAND){
+		if(button != BUTTON_COMMAND && !msg_handler.GetSingleElevatorState()){
 			msg_handler.Send_externalCommandComplete(floor, button, msg_handler.GetID())
 		}
 		prevfloor = -1
@@ -298,13 +303,13 @@ func Event_floorInQueue(floor int, button int){ // this is activated if one of t
 		//timer := time.NewTimer(time.Second * 3 )
 		seconds := 3
 		timer_seconds := time.Duration(seconds)*time.Second
-		time.AfterFunc(timer_seconds,Event_doorTimeout)
+		time.AfterFunc(timer_seconds,event_doorTimeout)
 
 		
 
 }
 
-func Event_doorTimeout(){
+func event_doorTimeout(){
 	fmt.Println("Timeoutcalled")
 	switch(state_slave){
 	case DOOR_OPEN:
@@ -322,7 +327,7 @@ func Event_doorTimeout(){
 	elev_driver.Elev_set_door_open_lamp(0)
 
 }
-func Event_newQueueRequest(floor int, button int){
+func event_newQueueRequest(floor int, button int){
 // add order regardless of current state
 	switch(state_slave){
 	case NOT_INITIALIZATED:
@@ -334,7 +339,7 @@ func Event_newQueueRequest(floor int, button int){
 	elev_driver.Elev_set_button_lamp(button, floor,1)
 }
 
-func Event_outsideButtonPressed(floor int, button int){
+func event_outsideButtonPressed(floor int, button int){
 	fmt.Println("Outside button pressed")
 	switch(state_slave){
 	case NOT_INITIALIZATED:
@@ -350,7 +355,7 @@ func Event_outsideButtonPressed(floor int, button int){
 
 
 // ADD LIGHTS TO THE BUTTONS
-func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []float64){
+func event_evaluateRequest(floor int,  button int, elev_id int, elev_score []float64){
 	fmt.Printf("Asked to calculate from elevator ID : %i \n",elev_id)
 	elev_driver.Elev_set_button_lamp(button,floor,1)
 

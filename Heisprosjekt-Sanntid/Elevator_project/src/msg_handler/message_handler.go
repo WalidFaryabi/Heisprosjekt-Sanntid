@@ -403,9 +403,13 @@ func Task_broadcastSupervisor(){
 			broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
 			broadcast(broadcast_conn)
 			fmt.Println("We broadcastet yup")
+			fmt.Println(singleStateElevator)
+		}else{
+			fmt.Println("skipped broadcasting due to connection")
 		}
+
 		time.Sleep(120 * time.Second)
-		fmt.Println("skipped broadcasting due to connection")
+	
 
 
 	}
@@ -415,6 +419,7 @@ func Task_broadcastSupervisor(){
 func broadcast(conn *net.UDPConn) {
 	//t0 := time.Now()
 	//run_bc := true
+	fmt.Println("Broadcast initialising")
 	msg := "Hello I am broadcasting!"
 	addr := GetLocalAddress()
 	broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
@@ -429,17 +434,18 @@ func broadcast(conn *net.UDPConn) {
 				//_,_ = conn.Write(buffer)
 				break LOOP
 			default:
+			fmt.Println("STILL BROADCASTING")
 			if(!singleStateElevator){
 				break LOOP
 			}
 			buffer,err := json.Marshal(broadcast_msg)
-	
+		
 			if err != nil {
 				fmt.Println("ERROR IN MARSHAL")
 				fmt.Println("%s", err)
 			}
 			_,_ = conn.Write(buffer)
-			
+			time.Sleep(time.Millisecond * 50)
 			//fmt.Println("Message sent")
 		}
 	}

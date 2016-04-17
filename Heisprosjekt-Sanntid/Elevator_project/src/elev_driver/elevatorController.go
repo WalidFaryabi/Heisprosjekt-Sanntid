@@ -103,16 +103,20 @@ func Elev_set_button_lamp(button,floor,value int){
 func Elev_set_floor_indicator(floor int){
 	if(floor < 0 || floor > 3){
 		fmt.Println("Fatal error, non existing floor")
+		//Io_set_bit(LIGHT_FLOOR_IND1)
+		//Io_clear_bit(LIGHT_FLOOR_IND2)
 		return
 	}
-	if((floor & 0x02) == 1){
+	if((floor & 0x02) > 0){
 		Io_set_bit(LIGHT_FLOOR_IND1)
+		
 		
 	}else{
 		Io_clear_bit(LIGHT_FLOOR_IND1)
 	}
-	if((floor & 0x01 ) == 1){
+	if((floor & 0x01 ) > 0){
 		Io_set_bit(LIGHT_FLOOR_IND2)
+	
 	}else{
 		Io_clear_bit(LIGHT_FLOOR_IND2)
 	}

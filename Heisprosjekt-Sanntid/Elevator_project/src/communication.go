@@ -29,25 +29,27 @@ func main() {
 	msg_handler.SemaphoreMessage <- 1
 	msg_handler.SemaphoreRead <-1
 	msg_handler.SemaphoreNewConnection <- 1
-
-	stfu_joey := make(chan msg_handler.Ch_elevOrder,10)
 	
-	stfu_joey_pls := make(chan int,10)
+	C_elevatorInfoContainer := make(chan msg_handler.Ch_elevOrder,10)
+	
+	C_elevatorOrders := make(chan int,10)
 
 	C_messages := make(chan msg_handler.Message,10)
 	
+	//go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
+	FSM.InitElevator()
 	msg_handler.InitElevatorNetwork()	
 		//C_sendCommando chan int, C_message chan Message,C_elevatorCommand chan int,C_order chan Ch_elevOrder 
 	go msg_handler.Task_broadcastSupervisor()
-	go msg_handler.Task_receiveElevMessages(C_messages,stfu_joey_pls, stfu_joey)
+	go msg_handler.Task_receiveElevMessages(C_messages,C_elevatorOrders, C_elevatorInfoContainer)
 
 	/*time.Sleep(10 * time.Second) // UTEN DENNE SÅ KAN VI IKKE MOTA MELDINGER, WTF? DETTE MÅ FIKSES //lol relax  this was just testing u wanna fucking fight?
 	fmt.Println("ready for sending")
 	*/
 	go msg_handler.Task_sendElevMessages(C_messages)	//SendElevMessages(C_listenCommando chan int, C_message chan Message, C_elevatorCommand chan int,C_order chan Ch_elevOrder)
-	
+	go FSM.Thread_elevatorStateMachine(C_elevatorOrders, C_elevatorInfoContainer)
 	time.Sleep(10 * time.Second)
-	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
+	
 	for{}
 	//time.Sleep(10 * time.Second)
 	//fmt.Println("Elevator initialized.")
