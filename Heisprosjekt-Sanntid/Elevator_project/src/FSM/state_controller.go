@@ -64,10 +64,15 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 		
 		time.Sleep(timer_miliseconds)
 		//running elevator
-		if(msg_handler.GetNelevators() > 1){
+		/*if(msg_handler.GetNelevators() > 1){
 			notSingleElevator = true
 		}else{
-			//notSingleElevator = false
+			notSingleElevator = false
+		}*/
+		if(msg_handler.GetSingleElevatorState()){
+			notSingleElevator = false
+		}else{
+			notSingleElevator = true
 		}
 
 	//fmt.Println("we get here ")
@@ -79,7 +84,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 				}else if(floor == n_floors - 1 && buttontype == elev_driver.BUTTON_CALL_UP){
 					continue	
 				}
-				if((buttontype != elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1) && false && (prevExternalButton == -1 && prevExternalFloor == -1)){// && notSingleElevator ){			//outside button pressed					
+				if((buttontype != elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1) && notSingleElevator && (prevExternalButton == -1 && prevExternalFloor == -1)){// && notSingleElevator ){			//outside button pressed					
 					fmt.Println("This is where u fucked up walid")
 					fmt.Printf(" %i		%i 	\n", floor,buttontype)
 					prevExternalFloor = floor

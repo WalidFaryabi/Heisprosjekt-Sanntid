@@ -469,7 +469,6 @@ func send_msg(msg Message){
 	<-SemaphoreMessage
 	_,_ = neighbourConnection.Write(buffer)
 	SemaphoreMessage <- 1
-	fmt.Println("semaphore done")
 }
 
 func Send_debug(text string, targetId int){
@@ -513,6 +512,10 @@ func GetID()(int){
 
 func GetNelevators()(int){
 	return nElevators
+}
+
+func GetSingleElevatorState()(bool){
+	return singleStateElevator
 }
 
 /**********************Initialize function**********************/
