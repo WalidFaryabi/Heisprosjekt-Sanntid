@@ -237,7 +237,10 @@ func calculateOrderScore(floor int, button int)(float64){ // algorithm for calcu
 		priorityScore+=50
 	}
 	if(lastFloor == floor){
-		priorityScore+=20
+		priorityScore+=40
+		if(BUTTON_CALLL_UP == button && lastDirection == 1 || BUTTON_CALL_DOWN ==button && lastDirection == -1 ){
+			priorityScore+=100
+		}
 	}else if(lastFloor < floor){
 		if(mainFloor > floor){
 			priorityScore+=45
