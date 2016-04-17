@@ -73,6 +73,7 @@ func Task_sendElevMessages( C_message chan Message) {
 
 	
 	for {
+		time.Sleep(time.Millisecond * 40)
 			if(singleStateElevator){
 				//broadcast data every once in a while untill it gets connected?
 
@@ -190,6 +191,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 	//conn.SetReadDeadline(deadlineTimer) // CURRENTLY TIMER IS SET TO 10 SEC
 	//timerbla := time.NewTimer(time.Second * 5)
 	for {	
+			time.Sleep(time.Millisecond * 10)
 			//fmt.Println("THIS GETS CALLED")
 			
 			n, _ := conn.Read(buffer) //does this even have a deadline? Ask joey. Set deadline on this for 10 sec.	currently not using error.
@@ -533,6 +535,7 @@ func InitElevatorNetwork(){
 	receiverAddress := 	"" + ":" + strconv.Itoa(20000+localPort)
 	setReceiverConn(receiverAddress) // Walid: I put broadcast() above setReceiverConn() because we were receiving messages from our own broadcast after it expires
 	//broadcast(broadcast_conn)
+
 }
 
 func init_localAddress() {
