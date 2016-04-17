@@ -40,7 +40,7 @@ func main() {
 	go msg_handler.Task_broadcastSupervisor()
 	go msg_handler.Task_receiveElevMessages(C_messages,stfu_joey_pls, stfu_joey)
 
-	/*time.Sleep(10 * time.Second) // UTEN DENNE SÅ KAN VI IKKE MOTA MELDINGER, WTF? DETTE MÅ FIKSES
+	/*time.Sleep(10 * time.Second) // UTEN DENNE SÅ KAN VI IKKE MOTA MELDINGER, WTF? DETTE MÅ FIKSES //lol relax  this was just testing u wanna fucking fight?
 	fmt.Println("ready for sending")
 	*/
 	go msg_handler.Task_sendElevMessages(C_messages)	//SendElevMessages(C_listenCommando chan int, C_message chan Message, C_elevatorCommand chan int,C_order chan Ch_elevOrder)
@@ -53,8 +53,10 @@ func main() {
 	time.Sleep(time.Second * 10)
 	fmt.Println(msg_handler.GetID())
 	for{
-		floor := msg_handler.NumberUserInput("floor")
-		button := msg_handler.NumberUserInput("button")
+		//floor := msg_handler.NumberUserInput("floor")
+		//button := msg_handler.NumberUserInput("button")
+		elev_id := msg_handler.NumberUserInput("elev id: ")
+		//msg.handler.Send_debug("Elev ID : \n")
 		msg_handler.Send_debug("ye hear me nuggah?",elev_id)
 		fmt.Printf("ELEV ID: %i \n", msg_handler.GetID())
 	}
