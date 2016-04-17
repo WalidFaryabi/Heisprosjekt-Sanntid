@@ -53,7 +53,7 @@ var circleConnection bool = false		//This bool verifies that we have full circul
 var watchdoge bool = false				//This bool verifies that the watchdog timer has started.
 // timer used in handling I am alive messages
 var watchdogTimer *time.Timer
-
+var stopBroadcast bool = false
 //semaphores
 var SemaphoreMessage chan int = make(chan int, 1)
 //var destroyReceive bool = false //just to kill one of the read threads
@@ -234,6 +234,7 @@ func Task_sendElevMessages( C_message chan Message) {
 						case ExternalOrderComplete:
 							send_msg(msgRecv)
 						case ConnectionLost:
+							fmt.Println("Inside sendelevmessags forwarding connection lost message")
 							send_msg(msgRecv)
 						case Debug:
 							if(msgRecv.TargetID == GetID()){
@@ -394,6 +395,8 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 
 				case ConnectionLost:
 					fmt.Println("we get here at conenction lost")
+					IAmAliveMsg := Message{MsgID : IAmAlive, Elev_id : GetID()} // JUST TO CONFIRM THAT THE ELEVATOR SENDS IM ALIVE BEFORE RECEIVING CONNECTION LOST
+					send_msg(IAmAliveMsg)
 					if(GetNeighbourElevConnection() == nil){
 						fmt.Println("I am the one who lost the connection :( so sorry senpai")
 						
