@@ -91,7 +91,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					prevExternalButton = buttontype
 					Event_outsideButtonPressed(floor,buttontype)
 				}else if(buttontype == elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && notSingleElevator){	
-
+						Event_newQueueRequest(floor,buttontype)	
 				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && orders[floor][buttontype] == 0 && !notSingleElevator){							//inside button pressed
 					Event_newQueueRequest(floor,buttontype)					
 
