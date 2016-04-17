@@ -42,7 +42,7 @@ var InitDone bool = false				//used to acknowledge initialization
 var prevfloor,prevbuttontype int = -1,-1	//Using this to avoid avoid spam after holding a button. 
 var prevExternalFloor, prevExternalButton int = -1,-1	//same with external buttons. Not sending same request multiple times.
 
-func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder){		//Make a channel int in main
+func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_handler.Ch_elevOrder, fuck bool){		//Make a channel int in main
 	nFloors := setNFloors()
 	Event_init( nFloors )
 	InitDone = true
@@ -54,6 +54,9 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 
 	//var floorb, buttontypeb int 
 	for{
+		if(fuck){
+			fmt.Println(orders)
+		}
 		/*if(queue.Orders[floorb][buttontypeb] != 1 ){
 			floorb,buttontypeb =setOrder()	
 			
@@ -331,13 +334,13 @@ func Event_outsideButtonPressed(floor int, button int){
 	score_array := []float64{score}
 	
 	fmt.Println(score_array)
-	msg_handler.Send_requestedOrderEvaluation(score_array, floor,msg_handler.ButtonType(button) )			
+	msg_handler.Send_requestedOrderEvaluation(score_array, floor,msg_handler.ButtonType(button), msg_handler.GetID() )			
 }
 
 
 // ADD LIGHTS TO THE BUTTONS
 func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []float64){
-	fmt.Println("Asked to calculate")
+	fmt.Printf("Asked to calculate from elevator ID : %i \n",elev_id)
 	switch(state_slave){
 	case NOT_INITIALIZATED:
 			return
@@ -352,14 +355,16 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 				winningElevator = i + 1
 			}
 		}
-		prevExternalButton = 1
-		prevExternalFloor = 1 
+		prevExternalButton = -1
+		prevExternalFloor = -1 
 		if(elev_id == winningElevator ){
 			//this elevator is the winner
 			fmt.Println("this elevator is the winer")
 			fmt.Print(" ")
 			fmt.Println(winningElevator)
+	
 			orders[floor][button] = 1
+			fmt.Println(orders)
 		}else{
 			msg_handler.Send_newOrder(floor, msg_handler.ButtonType(button), winningElevator)
 			fmt.Println("Winning elevator has been calculated")
@@ -370,7 +375,7 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 		fmt.Println("forwarding")
 		score := calculateOrderScore(floor, button)
 		elev_score = append(elev_score, score)
-		msg_handler.Send_requestedOrderEvaluation(elev_score, floor,msg_handler.ButtonType(button))
+		msg_handler.Send_requestedOrderEvaluation(elev_score, floor,msg_handler.ButtonType(button),elev_id)
 	}
 }
 

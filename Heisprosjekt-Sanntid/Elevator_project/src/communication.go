@@ -47,24 +47,25 @@ func main() {
 	go msg_handler.Task_sendElevMessages(C_messages)	//SendElevMessages(C_listenCommando chan int, C_message chan Message, C_elevatorCommand chan int,C_order chan Ch_elevOrder)
 	
 	time.Sleep(10 * time.Second)
-	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
+	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey,true)
+	for{}
 	//time.Sleep(10 * time.Second)
 	//fmt.Println("Elevator initialized.")
 
 	//go msg_handler.Thread_elevatorCommRecv(stfu_joey_pls, stfu_joey)
 	//fmt.Printf("elev id %i \n", msg_handler.GetID())
-	time.Sleep(time.Second * 10)
+
 	fmt.Println(msg_handler.GetID())
-	/*for{
+	for{
 		//floor := msg_handler.NumberUserInput("floor")
 		//button := msg_handler.NumberUserInput("button")
 		elev_id := msg_handler.NumberUserInput("elev id: ")
 		//msg.handler.Send_debug("Elev ID : \n")
 		msg_handler.Send_debug("ye hear me nuggah?",elev_id)
 		fmt.Printf("ELEV ID: %i \n", msg_handler.GetID())
-	}*/
+	}
 	for{}
-	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
+	//go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
 	for{}
 	select{
 

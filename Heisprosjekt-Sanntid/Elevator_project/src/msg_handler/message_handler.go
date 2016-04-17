@@ -334,7 +334,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 					
 						
 				case OrderRequestEvaluation:
-					channel_message := Ch_elevOrder{Floor : message.Floor, Button : message.Buttontype, Elev_score : message.Elev_score} 
+					channel_message := Ch_elevOrder{Floor : message.Floor, Button : message.Buttontype, Elev_score : message.Elev_score, Elev_id : message.Elev_id} 
 					C_elevatorCommand <- OrderRequestEvaluation
 					C_order <- channel_message
 					//C_order.Floor <- message.Floor
@@ -440,8 +440,8 @@ func broadcast(conn *net.UDPConn) {
 
 /**********************Send functions**********************/
 
-func Send_requestedOrderEvaluation(elev_score []float64, floor int, buttontype ButtonType){
-	msg := Message{MsgID : OrderRequestEvaluation,Elev_id : elev_id, Elev_score : elev_score,Floor : floor, Buttontype : buttontype}
+func Send_requestedOrderEvaluation(elev_score []float64, floor int, buttontype ButtonType,elev_id_original int ){
+	msg := Message{MsgID : OrderRequestEvaluation,Elev_id : elev_id_original, Elev_score : elev_score,Floor : floor, Buttontype : buttontype}
 	send_msg(msg)
 	
 }
