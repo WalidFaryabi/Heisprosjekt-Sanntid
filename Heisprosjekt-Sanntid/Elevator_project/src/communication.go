@@ -53,8 +53,10 @@ func main() {
 	time.Sleep(time.Second * 10)
 	fmt.Println(msg_handler.GetID())
 	for{
-		elev_id := msg_handler.NumberUserInput("elev_id")
+		floor := msg_handler.NumberUserInput("floor")
+		button := msg_handler.NumberUserInput("button")
 		msg_handler.Send_debug("ye hear me nuggah?",elev_id)
+		fmt.Printf("ELEV ID: %i \n", msg_handler.GetID())
 	}
 	for{}
 	go FSM.Thread_elevatorStateMachine(stfu_joey_pls,stfu_joey)
