@@ -51,6 +51,7 @@ var singleStateElevator bool = true
 
 var circleConnection bool = false		//This bool verifies that we have full circular connection
 var watchdoge bool = false				//This bool verifies that the watchdog timer has started.
+var stopBroadcast bool = false			//Stopping broadcast when necessary.
 // timer used in handling I am alive messages
 var watchdogTimer *time.Timer
 
@@ -301,11 +302,17 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 				case BroadcastMsg:
 					//fmt.Println("WE REACH INSIDE BROADCASTMSG")
 
-					if(broadcastLastLocalAddress == message.LocalAddr){break} //all broadcastlastlocal addresses are the same lol.
+					if(broadcastLastLocalAddress != ""){break} //all broadcastlastlocal addresses are the same lol. processing a broadcast now.
 					disableAliveMsg()
 					broadcastLastLocalAddress = message.LocalAddr
 					nElevators++
-					if (elev_id == 0) {elev_id = nElevators} // a way to set the elev_id of the first elevator
+					broadcastAck := Message{MsgID : BroadcastAcknowledged, NewElevatorLocalAddress : message.Localaddress} //have to tell the other potential broadcasters that I am the first receiver
+					
+					if (elev_id == 0) {
+						C_message<- broadcastAck
+						elev_id = nElevators
+					} // a way to set the elev_id of the first elevator, i think having it here will cause problems
+														     //what if two elevators broadcast at the same time? Will they both not potentially be elev_id = 1?
 					
 					if (elev_id == 1) { // Only the first elevator should handle incoming broadcasts from newly initialized elevators
 						if(nElevators == 1){	//if this is the only elevator standing, then it will connect to the other elevator immediately
@@ -332,28 +339,32 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 							disableAliveMsg()
 							newElevatorMessage := Message{MsgID : NewElevatorConnection, LocalAddr : GetLocalAddress(), TargetID : numberOfElev, NumElev : numberOfElev,
 						    NewElevatorLocalAddress : message.LocalAddr, StringMsg : "Broadcast acknowledged"}
-
+						    C_message<-newElevatorMessage
 
 							 // Create a message that should be sent to the new elevator
 
 							// we let the current "message" struct be passed as usual and let the BroadcastMsg in the send task handle it.
 							//C_message<-message // no point in doing this.
 							//<-SemaphoreNewConnection
-							C_message<-newElevatorMessage
+							
 							//SemaphoreNewConnection <-1
 						}
 					}
 
 				case BroadcastAcknowledged:
 					//someone acknowledged your message.
-					if (elev_id == 0) { // Since the elev_id is zero, this is the elevator who sent the broadcast, and should therefor receive the acknoledge
+					if (elev_id == 0 && GetLocalAddress == message.NewElevatorAddress) { // Since the elev_id is zero, this is the elevator who sent the broadcast, and should therefor receive the acknoledge
 						fmt.Println("Broadcast acknowledged")
-						elev_id = message.NumElev // we set the elev_id such that the message from NewElevatorConnection, which is behind, will correctly identify this as the Target_ID	
-						<-	SemaphoreNewConnection 						
-						nElevators = elev_id
-						SemaphoreNewConnection <- 1 //must make sure if we apply a new elev ID before we send the newElevatorconnection message.
+						//stop broadcasting.
+						stopBroadcast = true
+
+					}
+						//elev_id = message.NumElev // we set the elev_id such that the message from NewElevatorConnection, which is behind, will correctly identify this as the Target_ID	
+					//	<-	SemaphoreNewConnection 						
+				//		nElevators = elev_id
+					//	SemaphoreNewConnection <- 1 //must make sure if we apply a new elev ID before we send the newElevatorconnection message.
 					//	singleStateElevator = false
-					} else { // pass the acknowledge message to the neighbour and update the the current nElevators variable
+					/* else { // pass the acknowledge message to the neighbour and update the the current nElevators variable
 						fmt.Println("inside broadcst acknowledge")
 						nElevators = message.NumElev
 
@@ -365,14 +376,14 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 							setNeighbourElevConnection()
 						}
 
-						C_message<-message
-					}
+						C_message<-message*/
+				//	}
 				
 
 				case NewElevatorConnectionEstablished:
 					if(message.Elev_id == GetID()){
 						fmt.Println("Full circle connection")
-						broadcastLastLocalAddress = ""
+						broadcastLastLocalAddress = "" //accept a new broadcast
 						singleStateElevator = false
 					    enableAliveMsg()
 					    watchdoge = true
@@ -382,7 +393,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 						fmt.Println("forwarding the message")
 						C_message <- message
 						//circleConnection = true
-						broadcastLastLocalAddress = ""
+						broadcastLastLocalAddress = ""	//accept a new broadcast
 					}
 				case IAmAlive:
 					if (!circleConnection) {
@@ -510,6 +521,7 @@ func broadcast(conn *net.UDPConn) {
 	broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
 	//broadcast_endMsg := Message{MsgID : BroadcastMsg, StringMsg : "Broadcasting done"}
 	broadcastTimer := time.NewTimer(time.Duration(3)*time.Second)	//possibly make a text file where u can store values? //stfu seriosuly stfu
+	stopBroadcast = false //for every new instance of broadcast, we allow it to immediately broadcast. If theres receiver, it will send back acknowledgement and end the broadcast.
 LOOP:
 	for{
 		//if(!run_bc){break}
@@ -520,6 +532,7 @@ LOOP:
 				//_,_ = conn.Write(buffer)
 				break LOOP
 			default:
+			if(!stopBroadcast){
 			fmt.Println("STILL BROADCASTING")
 			if(!singleStateElevator){
 				break LOOP
@@ -537,7 +550,7 @@ LOOP:
 			}
 			time.Sleep(time.Millisecond * 50)
 
-			//fmt.Println("Message sent")
+			}//fmt.Println("Message sent")
 		}
 	}
 	fmt.Println("broadcast socket closed")
@@ -566,7 +579,15 @@ func Send_elevInitCompleted(successfull bool){
 	
 }
 
-func send_broadcastData(){}
+func setNeighbourElevConnection() {
+	if neighbourConnection == nil && neighbourElevatorAddress != "" {
+		neighbourConnection = netw.GetConnectionForDialing(neighbourElevatorAddress)
+	}
+}
+
+func acknowledgeBroadcast(broadcastAddress string){
+	neighbourConnection = network.GetConn
+}
 //Private send function, which ultimately sends the message.
 func send_msg(msg Message){
 	buffer,err := json.Marshal(msg)
