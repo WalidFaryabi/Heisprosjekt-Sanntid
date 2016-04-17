@@ -232,6 +232,36 @@ func calculateOrderScore(floor int, button int)(float64){ // algorithm for calcu
 
 		}
 	}
+	priorityScore-=float64(nCurrentOrders) * 30.0
+	if(lastFloor == nFloors){
+		priorityScore+=50
+		if(checkQueueList(ALL_ORDERS, nFloors,-1) == 1){//check all orders from top floor to bottom floor if only one order, give it more point
+			priorityScore+=150/(math.Abs(float64(lastFloor - floor)))
+		 
+	}else if(lastFloor ==0){
+		priorityScore+=50
+		if(checkQueueList(ALL_ORDERS,0,1)==1){
+			priorityScore+=150/(math.Abs(float64(floor)))
+		}
+	}
+	if(button == BUTTON_CALL_UP){
+		multiplierOfOrdersUp := float64(checkQueueList(BUTTON_UP_ORDERS,lastFloor,1))
+		if(lastDirection == 1){
+			priorityScore+=multiplierOfOrdersUp*25.0
+		}else if(lastDirection == -1){
+			priorityScore-= multiplierOfOrdersUp*15.0
+		}
+	}
+	if(button == BUTTON_CALL_DOWN){
+		multiplierOfDown := float64(checkQueueList(BUTTON_DOWN_ORDERS,lastFloor,-1))
+		if(lastDirection == -1){
+			priorityScore+=multiplierOfDown*25.0
+		}else if(lastDirection ==1){
+			priorityScore-=multiplierOfDown*10.0
+		}
+	}
+
+
 	
 	if(orders[floor][button] == 1){
 		priorityScore+=50
@@ -276,10 +306,11 @@ func calculateOrderScore(floor int, button int)(float64){ // algorithm for calcu
 			
 		}
 	}
+	
+	}
 	Println("priority score achieved?")
 	Println(priorityScore)
 	return priorityScore
-
 }
 
 func GetNFloors()(int){

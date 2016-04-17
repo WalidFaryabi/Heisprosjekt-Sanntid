@@ -59,7 +59,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 	var notSingleElevator bool = false
 	//var floorb, buttontypeb int 
 	for{
-		time.Sleep(time.Millisecond * 40)
+		time.Sleep(time.Millisecond * 100)
 		/*if(queue.Orders[floorb][buttontypeb] != 1 ){
 			floorb,buttontypeb =setOrder()	
 			
