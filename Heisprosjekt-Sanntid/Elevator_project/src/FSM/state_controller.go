@@ -55,6 +55,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 
 	//var floorb, buttontypeb int 
 	for{
+		time.Sleep(time.Millisecond * 40)
 		/*if(queue.Orders[floorb][buttontypeb] != 1 ){
 			floorb,buttontypeb =setOrder()	
 			
@@ -93,9 +94,10 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					Event_outsideButtonPressed(floor,buttontype)
 				}else if(buttontype == elev_driver.BUTTON_COMMAND && elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && notSingleElevator){	
 						Event_newQueueRequest(floor,buttontype)	
+						fmt.Println("this fuck face got activated")
 				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && orders[floor][buttontype] == 0 && !notSingleElevator){							//inside button pressed
 					Event_newQueueRequest(floor,buttontype)					
-
+						fmt.Println("This fuck face got acctivated maybe. maybe its called fuck you?")
 				}
 				if( (orders[floor][buttontype] == 1)&& (prevfloor != floor) && (prevbuttontype != buttontype) ) {
 					prevfloor,prevbuttontype = floor,buttontype //to avoid excessive button mashing order...
@@ -164,7 +166,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 				Event_evaluateRequest(order.Floor, int(order.Button),order.Elev_id, order.Elev_score)
 				//Recv Order request evaluation
 			case msg_handler.OrderRequest:
-				fmt.Println("state machine thread has received the command")
+				fmt.Println("Have received order")
 				order := <-C_order
 				if(orders[order.Floor][order.Button] == 1){
 						

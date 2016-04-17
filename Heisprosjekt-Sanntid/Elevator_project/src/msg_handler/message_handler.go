@@ -253,7 +253,6 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 					
 					broadcastLastLocalAddress = message.LocalAddr
 					nElevators++
-					fmt.Println(elev_id)
 					if (elev_id == 0) {elev_id = nElevators} // a way to set the elev_id of the first elevator
 					
 					if (elev_id == 1) { // Only the first elevator should handle incoming broadcasts from newly initialized elevators
@@ -322,7 +321,7 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 				
 
 					if(message.Elev_id == GetID()){
-						fmt.Println("Full connection")
+						fmt.Println("Full circle connection")
 						broadcastLastLocalAddress = ""
 						singleStateElevator = false
 					}else{
@@ -392,6 +391,7 @@ func Task_broadcastSupervisor(){
 		if(singleStateElevator){//if it is not connected to any elevator, it will try broadcasting for 3 sec every 3 min.
 			broadcast_conn := netw.GetConnectionForDialing(broadcastAddr)
 			broadcast(broadcast_conn)
+			fmt.Println("We broadcastet yup")
 		}
 		time.Sleep(120 * time.Second)
 		fmt.Println("skipped broadcasting due to connection")
