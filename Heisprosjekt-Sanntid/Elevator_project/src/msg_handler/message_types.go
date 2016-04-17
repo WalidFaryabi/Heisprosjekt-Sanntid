@@ -26,6 +26,9 @@ const(
 	BroadcastAcknowledged
 	Debug
 	ExternalOrderComplete
+	IAmAlive
+	CheckNeighbourConnection
+	ConnectionLost
 )	 		
 
 type Message struct{

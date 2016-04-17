@@ -47,6 +47,12 @@ var nElevators int
 var prevElevConnected bool = false 	//hmm not 100% sure on usage yet
 var singleStateElevator bool = true
 
+//System bools
+
+var circleConnection bool = false		//This bool verifies that we have full circular connection
+var watchdoge bool = false				//This bool verifies that the watchdog timer has started.
+// timer used in handling I am alive messages
+var watchdogTimer *time.Timer
 
 //semaphores
 var SemaphoreMessage chan int = make(chan int, 1)
@@ -56,17 +62,73 @@ var SemaphoreRead chan int = make(chan int, 1)
 var SemaphoreNewConnection chan int = make(chan int, 1)
 var BroadcastMutex chan int = make(chan int, 1)
 
+var aliveMessageContainer chan int = make(chan int,1)
+
 
 /******************************************Public Functions*****************************************/
 
 
 /**********************threads**********************/
 
+func Task_networkSupervisor() {
+	
+	
+	for{if (circleConnection == true){break} }
+	 //do not send alive messages before theres a full circle connection
+	fmt.Println("We broke loop")
+	//watchdogTimer = time.AfterFunc(time.Duration(3)*time.Second, watchdogCallback)
+	//watchdoge = true
+	for {
+		if(circleConnection == true && neighbourConnection != nil){
+			IAmAliveMsg := Message{MsgID : IAmAlive, Elev_id : GetID()}
+			send_msg(IAmAliveMsg)
+		}
+		select {
+		case alive_id :=<-aliveMessageContainer:
+			fmt.Printf("Received alive from elev id : %d \n", alive_id)
+			break
+
+		case <-time.After(5 * time.Second):
+			watchdogCallback() // we done guufed
+			return
+		}
+	time.Sleep(time.Second * 1)
+	}
+
+}
+
+
+		/*
+		if (circleConnection == true && watchdoge == true) { //do not send alive messages before theres a full circle connection
+			fmt.Println("Sending alive")
+			send_msg(IAmAliveMsg)
+			time.Sleep(time.Millisecond * 40)
+			//if(!circleConnection){
+			//	msg := Message{MsgID : CheckNeighbourConnection, LocalAddr : GetLocalAddress()}
+			//	send_msg(msg)
+			//}			
+		}else{
+			//if we establish conenction between two elevators, and then add another one, the timer must stop temporarily.
+			watchdogTimer.Stop()
+			watchdoge = false
+		}*/
+	
+
+/*
+for {
+select {
+	case alivemsg<-aliveMessageReceived:
+		break
+
+	case <-After(10 * Millisecond):
+		return
+}*/
+
 func Task_sendElevMessages( C_message chan Message) {
 	
 	//msg := "Hello!"
 	//addr := GetLocalAddress()
-//	broadcastLastLocalAddress := "" //This variable will be used to make sure we do not process the same info multiple times.
+	//	broadcastLastLocalAddress := "" //This variable will be used to make sure we do not process the same info multiple times.
 
 	var msgRecv Message
 	var newMsg bool
@@ -160,6 +222,9 @@ func Task_sendElevMessages( C_message chan Message) {
 						//	broadcastLastLocalAddress = ""
 
 							//SemaphoreNewConnection <-1
+						case CheckNeighbourConnection:
+							send_msg(msgRecv)
+
 						case ExternalOrderComplete:
 							send_msg(msgRecv)
 						case Debug:
@@ -178,44 +243,23 @@ func Task_sendElevMessages( C_message chan Message) {
 func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int, C_order chan Ch_elevOrder) {
 	buffer := make([]byte, 1024)
 	time.Sleep(1 * time.Second)
-	//elev_id_container := 0//prøver å beskyte mot det problemet med broadcast last address
-	//addr := "" currently not using this.
-	//numElev := 0	currentlyn not using this.
 	broadcastLastLocalAddress := ""
-	//t0 := time.Now()
-	//time.Sleep(time.Second * 10)
 	var message Message
-	//deadlineTime := time.Second * 10
-	//deadtest := time.Time
-	//deadtest.Duration = deadlinetime
-	//deadlineTimer := time.Now().Add(5 * time.Second)
 	conn := receiverConn
-	//conn.SetReadDeadline(deadlineTimer) // CURRENTLY TIMER IS SET TO 10 SEC
-	//timerbla := time.NewTimer(time.Second * 5)
 	for {	
 			time.Sleep(time.Millisecond * 10)
-			//fmt.Println("THIS GETS CALLED")
-			
 			n, _ := conn.Read(buffer) //does this even have a deadline? Ask joey. Set deadline on this for 10 sec.	currently not using error.
-
 			if(n != 0){
 				_ = json.Unmarshal(buffer[:n], &message)
 				switch(message.MsgID){
 
 				case NewElevatorConnection:
-			
 					fmt.Println("New elevator connection recv")
 					nElevators++
-										//broadcastLastLocalAddress = "sad"
-					//if(broadcastLastLocalAddress  != message.NewElevatorLocalAddress){
+					circleConnection = false
+										
 						fmt.Println("broadcast != last broadcast")
-						//broadcastLastLocalAddress = message.LocalAddrOfFirstElevator
-					//	broadcastLastLocalAddress = message.NewElevatorLocalAddress
-						/*if(message.TargetID == 2){
-							fmt.Println("correctly assigning elev Id 2")
-							elev_id = 2
-						}*/
-						//if (elev_id == message.TargetID) {
+						
 						if(elev_id == 0){
 							fmt.Println("WE HAVE REACHED THE LAST ELEVATOR")
 							setNeighbourElevatorAddress(message.LocalAddr)
@@ -233,28 +277,24 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 							neighbourConnection = nil
 							setNeighbourElevatorAddress(message.NewElevatorLocalAddress)
 							setNeighbourElevConnection()
+							disableAliveMsg()
 							C_message <-message
+
 							//this elevator was the previous last one.
 
 						}else{
+							disableAliveMsg()
 							C_message <- message
 							fmt.Println("Forwarding new elevator connection message.")
-						}/*else if(elev_id == (message.TargetID-1) ){ //this is the previous last elevator. 
-							neighbourConnection.Close()
-							setNeighbourElevatorAddress(message.NextElevatorAddr)
-							setNeighbourElevConnection()
-							C_message <- message
 
-						}*/
-				//	}
-				
-					//newNeighbourLocaladdr := message.LocalAddr //local address of the new elevator // not using this yet.
+						}
+
 					
 				case BroadcastMsg:
 					//fmt.Println("WE REACH INSIDE BROADCASTMSG")
 
 					if(broadcastLastLocalAddress == message.LocalAddr){break} //all broadcastlastlocal addresses are the same lol.
-					
+					circleConnection = false
 					broadcastLastLocalAddress = message.LocalAddr
 					nElevators++
 					if (elev_id == 0) {elev_id = nElevators} // a way to set the elev_id of the first elevator
@@ -276,10 +316,12 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 							C_message<-establishedConnectionMsg
 
 						} else {//try and do nothing when u receive a commit message
+
 							numberOfElev := nElevators
 							fmt.Println(" broadcast message receivedw hen nElevators >= 2")
 							fmt.Println("Elevators : ")
 							fmt.Println(nElevators)
+							disableAliveMsg()
 							newElevatorMessage := Message{MsgID : NewElevatorConnection, LocalAddr : GetLocalAddress(), TargetID : numberOfElev, NumElev : numberOfElev,
 						    NewElevatorLocalAddress : message.LocalAddr, StringMsg : "Broadcast acknowledged"}
 
@@ -294,8 +336,6 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 						}
 					}
 
-									
-			
 				case BroadcastAcknowledged:
 					//someone acknowledged your message.
 					if (elev_id == 0) { // Since the elev_id is zero, this is the elevator who sent the broadcast, and should therefor receive the acknoledge
@@ -322,18 +362,40 @@ func Task_receiveElevMessages(C_message chan Message, C_elevatorCommand chan int
 				
 
 				case NewElevatorConnectionEstablished:
-				
-
 					if(message.Elev_id == GetID()){
 						fmt.Println("Full circle connection")
 						broadcastLastLocalAddress = ""
 						singleStateElevator = false
+					    enableAliveMsg()
+						//watchdogTimer.Reset(time.Duration(3)*time.Second)
 					}else{
 						fmt.Println("The newest elevator has successfully connected to us!")
 						fmt.Println("forwarding the message")
 						C_message <- message
+						//circleConnection = true
 						broadcastLastLocalAddress = ""
 					}
+				case IAmAlive:
+					if (!circleConnection) {
+						enableAliveMsg()
+						
+					}
+					aliveMessageContainer <- message.Elev_id
+
+
+
+				case CheckNeighbourConnection:
+					if (GetNeighbourElevConnection() == nil) {
+						// We have found the elevator with nil neighbourconnection
+						fmt.Println("Founc elevator with nil neighbourconnection: ", elev_id)
+						setNeighbourElevatorAddress(message.LocalAddr)
+						setNeighbourElevConnection()
+						// for now i will set the circleConn here since when this is called we have a full circle again
+						circleConnection = true
+					} else {
+						// pass the message to the next neighbour
+						C_message<-message
+					}		
 					
 						
 				case OrderRequestEvaluation:
@@ -409,9 +471,6 @@ func Task_broadcastSupervisor(){
 		}
 
 		time.Sleep(120 * time.Second)
-	
-
-
 	}
 }
 
@@ -424,12 +483,13 @@ func broadcast(conn *net.UDPConn) {
 	addr := GetLocalAddress()
 	broadcast_msg := Message{MsgID : BroadcastMsg,StringMsg : msg, LocalAddr : addr}
 	//broadcast_endMsg := Message{MsgID : BroadcastMsg, StringMsg : "Broadcasting done"}
-	broadcastTimer := time.NewTimer(time.Second * 3)	//possibly make a text file where u can store values?
-	LOOP:
+	broadcastTimer := time.NewTimer(time.Duration(3)*time.Second)	//possibly make a text file where u can store values? //stfu seriosuly stfu
+LOOP:
 	for{
 		//if(!run_bc){break}
 		select{
 			case <-broadcastTimer.C:
+				fmt.Println("this gets called")
 				//buffer,_ := json.Marshal(broadcast_endMsg)
 				//_,_ = conn.Write(buffer)
 				break LOOP
@@ -438,14 +498,19 @@ func broadcast(conn *net.UDPConn) {
 			if(!singleStateElevator){
 				break LOOP
 			}
+
 			buffer,err := json.Marshal(broadcast_msg)
-		
+			
 			if err != nil {
 				fmt.Println("ERROR IN MARSHAL")
 				fmt.Println("%s", err)
 			}
-			_,_ = conn.Write(buffer)
+			_,err = conn.Write(buffer)
+			if err != nil {
+				fmt.Println("WE GOT ERROR!")
+			}
 			time.Sleep(time.Millisecond * 50)
+
 			//fmt.Println("Message sent")
 		}
 	}
@@ -483,9 +548,23 @@ func send_msg(msg Message){
 		fmt.Println("ERROR IN MARSHAL OF SENDING message")
 		fmt.Println("%s", err)
 	}
+	if(neighbourConnection == nil){
+		return
+	}
 	<-SemaphoreMessage
-	_,_ = neighbourConnection.Write(buffer)
+	_,err = neighbourConnection.Write(buffer)
 	SemaphoreMessage <- 1
+/*	if err != nil {
+		fmt.Println("Error in writing to neighbourconnection")
+		neighbourConnection = nil
+		neighbourElevatorAddress = ""
+		circleConnection = false
+		if(nElevators == 2) { // we need to treat this case by itself, ask walid whether this is an alrgiht place to put it
+			nElevators--
+			singleStateElevator = true
+		}
+	}*/
+
 }
 
 func Send_debug(text string, targetId int){
@@ -555,7 +634,6 @@ func InitElevatorNetwork(){
 	receiverAddress := 	"" + ":" + strconv.Itoa(20000+localPort)
 	setReceiverConn(receiverAddress) // Walid: I put broadcast() above setReceiverConn() because we were receiving messages from our own broadcast after it expires
 	//broadcast(broadcast_conn)
-
 }
 
 func init_localAddress() {
@@ -616,3 +694,19 @@ func NumberUserInput(typeOfInput string) (int) {
 	}
 	return input
 }
+
+func enableAliveMsg(){
+	circleConnection = true
+}
+
+func disableAliveMsg(){
+	circleConnection = false
+}
+
+func watchdogCallback() {
+	//Nothing here atm.
+	fmt.Println("Watchdog called")
+	msg := Message{MsgID : ConnectionLost, LocalAddr : GetLocalAddress(),Elev_id :  GetID()}
+	send_msg(msg)
+}
+

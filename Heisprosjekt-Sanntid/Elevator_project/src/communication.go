@@ -47,9 +47,10 @@ func main() {
 	fmt.Println("ready for sending")
 	*/
 	go msg_handler.Task_sendElevMessages(C_messages)	//SendElevMessages(C_listenCommando chan int, C_message chan Message, C_elevatorCommand chan int,C_order chan Ch_elevOrder)
+	go msg_handler.Task_networkSupervisor()
 	go FSM.Thread_elevatorStateMachine(C_elevatorOrders, C_elevatorInfoContainer)
 	time.Sleep(10 * time.Second)
-	
+		
 	for{}
 	//time.Sleep(10 * time.Second)
 	//fmt.Println("Elevator initialized.")
