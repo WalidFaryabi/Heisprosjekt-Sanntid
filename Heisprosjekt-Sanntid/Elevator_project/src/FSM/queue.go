@@ -219,6 +219,7 @@ func calculateOrderScore(floor int, button int)(float64){ // algorithm for calcu
 
 	nCurrentOrders := checkQueueList(ALL_ORDERS,0,1)
 	if(nCurrentOrders == -1){
+		Println("we should get here definitely")
 		priorityScore +=100
 		if(lastFloor == floor){
 			priorityScore +=200 

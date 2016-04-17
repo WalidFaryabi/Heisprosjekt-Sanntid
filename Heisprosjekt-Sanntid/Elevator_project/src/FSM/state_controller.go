@@ -90,7 +90,7 @@ func Thread_elevatorStateMachine(C_elevatorCommand chan int,C_order chan msg_han
 					prevExternalFloor = floor
 					prevExternalButton = buttontype
 					Event_outsideButtonPressed(floor,buttontype)
-				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && orders[floor][buttontype] == 0){							//inside button pressed
+				}else if(elev_driver.Elev_get_button_signal(buttontype,floor) == 1 && orders[floor][buttontype] == 0 && !notSingleElevator){							//inside button pressed
 					Event_newQueueRequest(floor,buttontype)					
 
 				}
@@ -347,7 +347,7 @@ func Event_evaluateRequest(floor int,  button int, elev_id int, elev_score []flo
 		highestElevatorScore := 0.0
 		winningElevator := 0
 		for i := 0 ; i<msg_handler.GetNelevators() ;i++{
-			fmt.Printf("Elev score[%i] \n", elev_score[i])
+			fmt.Printf("Elev score[%i] = %i \n",i, elev_score[i])
 			if(elev_score[i] >= highestElevatorScore){
 				highestElevatorScore = elev_score[i]
 				winningElevator = i + 1
